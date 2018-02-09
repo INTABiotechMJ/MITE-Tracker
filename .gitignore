@@ -1,0 +1,11 @@
+query
+subject
+*.fasta
+*.fa
+venv
+test
+tmp/*.tmp
+.DS_Store
+results/*
+!results/.gitkeep 
+.vscode
