@@ -108,14 +108,14 @@ def _findIR(q):
             if length < align_min_len:
                 continue
 
+
             #subject transform cause it was reversed
             sstart = splited_len - sstart 
             send = splited_len - send 
 
             #obtain IR sequences
             seq_q = seq[qstart:qend]
-            seq_q_prime = seq[sstart:send]
-            seq_s = Seq(seq_q_prime).reverse_complement()
+            seq_q_prime = seq[send:sstart]
 
             #organice positions
             ir_start = min(qstart,qend,sstart,send)
@@ -138,13 +138,13 @@ def _findIR(q):
             with l_lock:
                 ir = {'ir': ir_seq, 'id':record.id, 
                         'start':ir_start, 'end':ir_end, 
-                        'len':ir_len,
+                        'len':ir_len,'ir1':seq_q,'ir2':seq_q_prime
                         } 
                 irs.append(ir)
                 found += 1
         porc = (total_queue_count - q.unfinished_tasks) * 100 / total_queue_count
         if porc - last_porc >= 10:
-            #print '%i%% ' % porc,
+            print '%i%% ' % porc,
             last_porc = porc
             sys.stdout.flush()
         q.task_done()
@@ -243,8 +243,8 @@ for ir in irs:
             #ir is nested in ir_2
             nested = True
     if not nested:
-        params = (ir['id'], ir['start'], ir['end'], ir['len'])
-        description = "SEQ:%s START:%i END:%i ir_LEN:%i" % (params)
+        params = (ir['id'], ir['start'], ir['end'], ir['len'], ir['ir1'], ir['ir2'])
+        description = "SEQ:%s START:%i END:%i ir_LEN:%i IR_1:%s IR_2:%s " % (params)
         ir_seq_rec = SeqRecord(Seq(ir['ir']), id='ir_' + str(count), description = description)
         ir_arr.append( ir_seq_rec)
         ir_new = {'from': ir['id'], 'id':'ir_' + str(count),'start':ir['start'], 'end':ir['end']}
