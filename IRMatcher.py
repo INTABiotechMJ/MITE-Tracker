@@ -9,7 +9,7 @@ import time
 import argparse
 from math import ceil
 import sys
-from intervaltree import Interval, IntervalTree
+import pandas as pd
 from threading import Thread, Lock, active_count
 import Queue
 import logging
@@ -131,11 +131,13 @@ def _findIR(q):
             #again validate complexity, a value of 1 means only two different nucleotides are present
             if lcc_simp(seq_q) <= 1.2:
                 continue
+
+            #ir_new = {'ir': ir_seq, 'id':record.id, 
+            #        'len':ir_len,'ir_1':seq_q,'ir_2':seq_q_prime}
             with l_lock:
-                ir_new = {'ir': ir_seq, 'id':record.id, 
-                        'start':ir_start, 'end':ir_end,
-                        'len':ir_len,'ir_1':seq_q,'ir_2':seq_q_prime}
-                tree.addi(ir_start, ir_end, ir_new)
+                new_element = [ir_start, ir_end,ir_seq, record.id, ir_len, seq_q, seq_q_prime]
+                df.loc[len(df)] = new_element
+                #tree.addi(ir_start, ir_end, ir_new)
 
                 """
                 nested = False
@@ -185,8 +187,8 @@ max_queue_size = 50
 current_processing_size = 0
 #initialize global variables
 irs = []
+df = pd.DataFrame(columns=['start','end','seq','record','len','ir_1','ir_2'])
 l_lock = Lock()
-tree = IntervalTree()
 
 count = 1
 record_count = 0
@@ -226,6 +228,39 @@ makelog("Creating gff and fasta")
 output_gff = open("results/" + args.jobname + "/IR.gff3","w") 
 output_gff.write("##gff-version 3\n")
 
+print len(df.index)
+for idx, row in df.iterrows():
+    #start,end,record,ir_len,ir_1 = row[1],row[2],row[3],row[4],row[5]
+    res = df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]
+    df.drop(res.index,inplace=True)
+print len(df.index)
+
+irs_seqs = []
+for _, row in df.iterrows():
+    count += 1
+    name = 'IR_' + str(count)
+    #append sequence record for biopython
+    params = (row.record, row.start, row.end, row.len, row.ir_1, row.ir_2)
+    description = "SEQ:%s START:%i END:%i IR_LEN:%i IR_1:%s IR_2:%s " % (params)
+    ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
+    irs_seqs.append(ir_seq_rec)
+    write_row = '\t'.join([ row.record, 'IRMatcher','inverted_repeat',str(row.start), str(row.end),'.','+','.','ID='+name ])
+    output_gff.write(write_row + '\n')
+
+makelog("Writing fasta")
+SeqIO.write(irs_seqs, "results/" + args.jobname + "/IR.fasta" , "fasta")
+print ""
+makelog("Found %i inverted repeats in" % (count - 1,))
+makelog(cur_time())
+
+
+"""
+for node in tree.items():
+    start = list(node)[0]
+    end = list(node)[1]
+    print start,end
+    tree.remove_envelop(start,end)
+
 irs_seqs = []
 count = 0
 for node in tree.items():
@@ -247,6 +282,8 @@ SeqIO.write(irs_seqs, "results/" + args.jobname + "/IR.fasta" , "fasta")
 print ""
 makelog("Found %i inverted repeats in" % (count - 1,))
 makelog(cur_time())
+
+"""
 
 """
 print len(irs)
@@ -296,5 +333,3 @@ for ir in gff_buff:
     write_row =  '\t'.join([ ir['from'], 'irParser','ir',str(ir['start']), str(ir['end']),'.','+','.','ID='+ir['id'] ]) 
     output_gff.write(write_row + '\n')
 """
-
-
