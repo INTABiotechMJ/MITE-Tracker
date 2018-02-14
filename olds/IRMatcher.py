@@ -93,7 +93,6 @@ def _findIR(q):
         os.remove(query_filename)
         os.remove(subject_filename)
         lines = out.splitlines()
-        found = 0
         for row in lines:
             row = row.split()
             sstart = int(row[0])
@@ -109,42 +108,50 @@ def _findIR(q):
                 continue
 
             #subject transform cause it was reversed
-            sstart = splited_len - sstart 
-            send = splited_len - send 
+            transform_send = splited_len - sstart 
+            transform_sstart = splited_len - send 
 
             #obtain IR sequences
             seq_q = seq[qstart:qend]
-            seq_q_prime = seq[sstart:send]
+            seq_q_prime = seq[transform_sstart:transform_send]
             seq_s = Seq(seq_q_prime).reverse_complement()
 
             #organice positions
-            ir_start = min(qstart,qend,sstart,send)
-            ir_end = max(qstart,qend,sstart,send)
-            ir_len = ir_end - ir_start
+            #subject further than query
+            if (transform_send + transform_sstart) / 2 >  (qend + qstart) / 2:
+                ir_1_start = qstart
+                ir_1_end = qend
+                ir_2_start = transform_sstart
+                ir_2_end = transform_send
+            else:
+                ir_1_start = transform_sstart
+                ir_1_end = transform_send
+                ir_2_start = qstart
+                ir_2_end = qend
 
-            #length constraints
-            if ir_len > max_sep_len:
+            if ir_2_end - ir_1_start > max_sep_len:
                 continue
-            if ir_len < min_total_len:
+            if ir_2_end - ir_1_start < min_total_len:
                 continue
-            #move in genome, split index
-            ir_seq = seq[ir_start:ir_end]
 
-            ir_start += split_index
-            ir_end += split_index
-            #again validate complexity, a value of 1 means only two different nucleotides are present
+            #again validate complexity
+            # a value of 1 means only two different nucleotides are present
             if lcc_simp(seq_q) <= 1.3:
                 continue
+
+
+            ir_seq = seq[ir_1_start:ir_2_end]
+            ir_len = ir_2_end - ir_1_start
+
             with l_lock:
                 ir = {'ir': ir_seq, 'id':record.id, 
-                        'start':ir_start, 'end':ir_end, 
+                        'start':ir_1_start, 'end':ir_2_end, 
                         'len':ir_len,
                         } 
                 irs.append(ir)
-                found += 1
         porc = (total_queue_count - q.unfinished_tasks) * 100 / total_queue_count
         if porc - last_porc >= 10:
-            #print '%i%% ' % porc,
+            print '%i%% ' % porc,
             last_porc = porc
             sys.stdout.flush()
         q.task_done()
@@ -171,13 +178,15 @@ for i in range(args.workers):
     worker = Thread(target=_findIR, args=(q,))
     worker.setDaemon(True)
     worker.start()
-windows_size = int(ceil(max_sep_len * 2))
+windows_size = int(ceil(max_sep_len * 200))
 
 #processes until certain amount of sequences
 #stablish a balance between memory usage and processing
 max_processing_size = windows_size * 30
 current_processing_size = 0
 
+print "wz", windows_size
+print "max sep len", max_sep_len
 for record in fasta_seq:
     total_queue_count = 1
     queue_count = 1
@@ -187,22 +196,25 @@ for record in fasta_seq:
     split_index = 0
     clean_seq = ''.join(str(record.seq).splitlines())
     seq_len = len(clean_seq)
+    print "seq_len", seq_len
+    print "sp_i:"
     while split_index < seq_len - min_total_len:
         seq = clean_seq[split_index:split_index + windows_size]
+        print split_index," ", (split_index + windows_size)
         q.put((seq, split_index,record.id,))
         queue_count += 1
         total_queue_count += 1
-        split_index += max_sep_len
-        current_processing_size += max_sep_len
-    #print ""
+        split_index += windows_size
+        current_processing_size += windows_size
+    print ""
     params = (record.id, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
     makelog("Adding %s %i out of %i(%i%% of total in %s)" % params)
     #in order to avoid overloading of memory, we add a join()
     #we do not direcly use the join() method so we can process several
     #small sequences at once
-    #if current_processing_size >= max_processing_size:
-    #    current_processing_size = 0
-    #    q.join()
+    if current_processing_size >= max_processing_size:
+        current_processing_size = 0
+        q.join()
 #In case of unprocessed sequences are left, let's wait
 q.join()
 
@@ -226,8 +238,7 @@ for ir in irs:
     if not duplicated:
         unique_ir.append(ir)
     id_1 += 1
-irs = unique_ir
-
+ir = unique_ir
 
 #delete nested
 id_1 = 0
