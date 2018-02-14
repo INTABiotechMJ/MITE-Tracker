@@ -228,12 +228,11 @@ makelog("Creating gff and fasta")
 output_gff = open("results/" + args.jobname + "/IR.gff3","w") 
 output_gff.write("##gff-version 3\n")
 
-print len(df.index)
+res = pd.DataFrame()
 for idx, row in df.iterrows():
     #start,end,record,ir_len,ir_1 = row[1],row[2],row[3],row[4],row[5]
-    res = df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]
-    df.drop(res.index,inplace=True)
-print len(df.index)
+    res = pd.concat([res, df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]])
+df.drop(res.index,inplace=True)
 
 irs_seqs = []
 for _, row in df.iterrows():
