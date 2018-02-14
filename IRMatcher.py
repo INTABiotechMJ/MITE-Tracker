@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from Bio import SeqIO
 from Bio.SeqUtils.lcc import lcc_simp
 from Bio.SeqRecord import SeqRecord
@@ -10,6 +9,7 @@ import time
 import argparse
 from math import ceil
 import sys
+from intervaltree import Interval, IntervalTree
 from threading import Thread, Lock, active_count
 import Queue
 import logging
@@ -53,6 +53,7 @@ align_min_len = args.align_min_len
 def _findIR(q):
     global last_porc
     global total_queue_count
+    global intersecter
     global irs
     while True:
         try:
@@ -134,7 +135,9 @@ def _findIR(q):
                 ir_new = {'ir': ir_seq, 'id':record.id, 
                         'start':ir_start, 'end':ir_end,
                         'len':ir_len,'ir_1':seq_q,'ir_2':seq_q_prime}
-                idx = 0
+                tree.addi(ir_start, ir_end, ir_new)
+
+                """
                 nested = False
                 for ir in irs[:]:
                     #is it nested into another?
@@ -145,8 +148,9 @@ def _findIR(q):
                         irs.remove(ir)
                 if not nested:
                     #append in a list
-                    irs.append(ir_new)
                     found += 1
+                    irs.append(ir_new)
+                """
         porc = split_index * 100 / seq_len
         if porc - last_porc >= 10:
             print '%i%% ' % porc,
@@ -154,8 +158,8 @@ def _findIR(q):
             sys.stdout.flush()
         q.task_done()
 
-#Coun sequences
 start_time = time.time()
+#Count sequences
 makelog("Counting sequences: ")
 fh = open(args.genome)
 n = 0
@@ -182,6 +186,7 @@ current_processing_size = 0
 #initialize global variables
 irs = []
 l_lock = Lock()
+tree = IntervalTree()
 
 count = 1
 record_count = 0
@@ -223,7 +228,8 @@ output_gff.write("##gff-version 3\n")
 
 irs_seqs = []
 count = 0
-for ir in irs:
+for node in tree.items():
+    ir = list(node)[2]
     count += 1
     name = 'IR_' + str(count)
     #append sequence record for biopython

@@ -16,6 +16,18 @@ virtualenv venv
 source venv/bin/activate
 pip install -r requirementes.txt
 ```
+in MAC if error 
+
+```
+lzomodule.c:35:10: fatal error: 'lzo1x.h' file not found
+```
+shows up:
+
+```
+export C_INCLUDE_PATH=$(brew --cellar lzo)/2.09/include/lzo:$(brew --cellar lzo)/2.09/include/
+export LIBRARY_PATH=/usr/local/lib
+pip install python-lzo
+```
 
 ## How to run
 ```
