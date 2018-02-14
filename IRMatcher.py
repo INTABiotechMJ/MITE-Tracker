@@ -131,12 +131,22 @@ def _findIR(q):
             if lcc_simp(seq_q) <= 1.2:
                 continue
             with l_lock:
-                ir = {'ir': ir_seq, 'id':record.id, 
-                        'start':ir_start, 'end':ir_end, 
-                        'len':ir_len,'ir1':seq_q,'ir2':seq_q_prime
-                        } 
-                irs.append(ir)
-                found += 1
+                ir_new = {'ir': ir_seq, 'id':record.id, 
+                        'start':ir_start, 'end':ir_end,
+                        'len':ir_len,'ir_1':seq_q,'ir_2':seq_q_prime}
+                idx = 0
+                nested = False
+                for ir in irs[:]:
+                    #is it nested into another?
+                    if ir['id'] == ir_new['id'] and ir['start'] <= ir_new['start'] and ir['end'] >= ir_new['end']:
+                        nested = True
+                    #another is nested in this one
+                    if ir['id'] == ir_new['id'] and ir['start'] >= ir_new['start'] and ir['end'] <= ir_new['end']:
+                        irs.remove(ir)
+                if not nested:
+                    #append in a list
+                    irs.append(ir_new)
+                    found += 1
         porc = split_index * 100 / seq_len
         if porc - last_porc >= 10:
             print '%i%% ' % porc,
@@ -155,7 +165,6 @@ for line in fh:
 seqs_count = n
 makelog(n)
 fh.close()
-
 
 #initialize workers
 q = Queue.Queue(maxsize=0)
@@ -197,7 +206,6 @@ for record in fasta_seq:
         split_index += windows_size - max_sep_len
         current_processing_size += windows_size
         if q.qsize() >= max_queue_size:
-            print split_index, split_index + windows_size
             current_processing_size = 0
             q.join()
             processed = True
@@ -209,10 +217,34 @@ for record in fasta_seq:
 if not processed:
     q.join()
 
-count = 1
-ir_arr = []
-gff_buff = []
+makelog("Creating gff and fasta")
+output_gff = open("results/" + args.jobname + "/IR.gff3","w") 
+output_gff.write("##gff-version 3\n")
 
+irs_seqs = []
+count = 0
+for ir in irs:
+    count += 1
+    name = 'IR_' + str(count)
+    #append sequence record for biopython
+    params = (ir['id'], ir['start'], ir['end'], ir['len'], ir['ir_1'], ir['ir_2'])
+    description = "SEQ:%s START:%i END:%i IR_LEN:%i IR_1:%s IR_2:%s " % (params)
+    ir_seq_rec = SeqRecord(Seq(ir['ir']), id=name, description = description)
+    irs_seqs.append(ir_seq_rec)
+
+    write_row = '\t'.join([ ir['id'], 'IRMatcher','inverted_repeat',str(ir['start']), str(ir['end']),'.','+','.','ID='+name ]) 
+    output_gff.write(write_row + '\n')
+
+
+makelog("Writing fasta")
+SeqIO.write(irs_seqs, "results/" + args.jobname + "/IR.fasta" , "fasta")
+print ""
+makelog("Found %i inverted repeats in" % (count - 1,))
+makelog(cur_time())
+
+"""
+print len(irs)
+makelog("Deleting duplicated")
 #delete duplicated
 id_1 = 1
 unique_ir = []
@@ -226,8 +258,8 @@ for ir in irs:
         unique_ir.append(ir)
     id_1 += 1
 irs = unique_ir
-
-
+print len(irs)
+makelog("Deleting nested")
 #delete nested
 id_1 = 0
 for ir in irs:
@@ -249,15 +281,14 @@ for ir in irs:
         ir_new = {'from': ir['id'], 'id':'ir_' + str(count),'start':ir['start'], 'end':ir['end']}
         gff_buff.append(ir_new) 
         count += 1
-
 #gff
+print len(ir_arr)
+makelog("Creating gff")
 output_gff = open("results/" + args.jobname + "/ir.gff3","w") 
 output_gff.write("##gff-version 3\n")
 for ir in gff_buff:
     write_row =  '\t'.join([ ir['from'], 'irParser','ir',str(ir['start']), str(ir['end']),'.','+','.','ID='+ir['id'] ]) 
     output_gff.write(write_row + '\n')
+"""
 
-SeqIO.write(ir_arr, "results/" + args.jobname + "/ir.fasta" , "fasta")
-print ""
-makelog("Found %i inverted repeats in" % (count - 1,))
-makelog(cur_time())
+
