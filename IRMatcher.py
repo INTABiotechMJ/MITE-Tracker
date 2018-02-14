@@ -200,9 +200,9 @@ for record in fasta_seq:
     #in order to avoid overloading of memory, we add a join()
     #we do not direcly use the join() method so we can process several
     #small sequences at once
-    #if current_processing_size >= max_processing_size:
-    #    current_processing_size = 0
-    #    q.join()
+    if current_processing_size >= max_processing_size:
+        current_processing_size = 0
+        q.join()
 #In case of unprocessed sequences are left, let's wait
 q.join()
 
