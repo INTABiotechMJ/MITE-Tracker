@@ -33,11 +33,9 @@ parser.add_argument("--min_total_len", help="Min total lenght", type=int, defaul
 parser.add_argument("--align_min_len", help="TIR minimun aligmnent length", type=int, default=10)
 args = parser.parse_args()#pylint: disable=invalid-name
 
-
 #write results
 if not os.path.isdir("results/" + args.jobname):
     os.mkdir("results/" + args.jobname)
-
 
 filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/" + args.jobname + "/out.log")
 logging.basicConfig(
@@ -47,7 +45,6 @@ logging.basicConfig(
     logging.FileHandler(filename),
     logging.StreamHandler()],
     format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-
 
 max_sep_len = args.max_sep_len
 min_total_len = args.min_total_len
@@ -59,13 +56,10 @@ def _findIR(q):
     global irs
     while True:
         try:
-            seq, split_index, record_id = q.get(timeout=10)
+            seq, split_index, record_id,seq_len = q.get(timeout=5)
         except Queue.Empty:
             break
         splited_len = len(seq)
-        if lcc_simp(seq) < 0.6: #Discard really low complexity IR
-            q.task_done()
-            continue
         seq_rc = str(Seq(seq).reverse_complement())
         record_q = SeqRecord(Seq(seq), id = record_id)
         record_s = SeqRecord(Seq(seq_rc), id = record_id + "_rc")
@@ -88,7 +82,8 @@ def _findIR(q):
         p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/bash')
         out,err = p.communicate()
         if err:
-            print err
+            q.task_done
+            makelog("BLASTN error: %s" % (err, ) )
         os.remove(query_filename)
         os.remove(subject_filename)
         lines = out.splitlines()
@@ -133,7 +128,7 @@ def _findIR(q):
             ir_start += split_index
             ir_end += split_index
             #again validate complexity, a value of 1 means only two different nucleotides are present
-            if lcc_simp(seq_q) <= 1.3:
+            if lcc_simp(seq_q) <= 1.2:
                 continue
             with l_lock:
                 ir = {'ir': ir_seq, 'id':record.id, 
@@ -142,13 +137,14 @@ def _findIR(q):
                         } 
                 irs.append(ir)
                 found += 1
-        porc = (total_queue_count - q.unfinished_tasks) * 100 / total_queue_count
+        porc = split_index * 100 / seq_len
         if porc - last_porc >= 10:
             print '%i%% ' % porc,
             last_porc = porc
             sys.stdout.flush()
         q.task_done()
 
+#Coun sequences
 start_time = time.time()
 makelog("Counting sequences: ")
 fh = open(args.genome)
@@ -160,25 +156,29 @@ seqs_count = n
 makelog(n)
 fh.close()
 
-fasta_seq = SeqIO.parse(args.genome, 'fasta')
-irs = []
-l_lock = Lock()
-count = 1
-record_count = 0
 
+#initialize workers
 q = Queue.Queue(maxsize=0)
 for i in range(args.workers):
     worker = Thread(target=_findIR, args=(q,))
     worker.setDaemon(True)
     worker.start()
-windows_size = int(ceil(max_sep_len * 30))
+windows_size = 20000 #int(ceil(max_sep_len * 30))
 
 #processes until certain amount of sequences
 #stablish a balance between memory usage and processing
-max_processing_size = windows_size * 30
+# delete max_processing_size = windows_size * 20
+max_queue_size = 50
 current_processing_size = 0
+#initialize global variables
+irs = []
+l_lock = Lock()
 
+count = 1
+record_count = 0
+fasta_seq = SeqIO.parse(args.genome, 'fasta')
 for record in fasta_seq:
+    processed = False
     total_queue_count = 1
     queue_count = 1
     last_porc = -5
@@ -187,28 +187,27 @@ for record in fasta_seq:
     split_index = 0
     clean_seq = ''.join(str(record.seq).splitlines())
     seq_len = len(clean_seq)
+    params = (record.id, seq_len, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
+    makelog("Adding %s (len %i) %i/%i (%i%% of total sequences in %s)" % params)
     while split_index < seq_len - min_total_len:
         seq = clean_seq[split_index:split_index + windows_size]
-        q.put((seq, split_index,record.id,))
+        q.put((seq, split_index,record.id,seq_len,))
         queue_count += 1
         total_queue_count += 1
         split_index += windows_size - max_sep_len
-        current_processing_size += windows_size  - max_sep_len
-    #print ""
-    params = (record.id, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
-    makelog("Adding %s %i out of %i(%i%% of total in %s)" % params)
-    #in order to avoid overloading of memory, we add a join()
-    #we do not direcly use the join() method so we can process several
-    #small sequences at once
-    if current_processing_size >= max_processing_size:
-        current_processing_size = 0
-        q.join()
-#In case of unprocessed sequences are left, let's wait
-q.join()
+        current_processing_size += windows_size
+        if q.qsize() >= max_queue_size:
+            print split_index, split_index + windows_size
+            current_processing_size = 0
+            q.join()
+            processed = True
+        #in order to avoid overloading of memory, we add a join()
+        #we do not direcly use the join() method so we can process several
+        #small sequences at once
 
-#a centinell strategy, unused for now
-#for i in range(args.workers):
-#    q.put((-1, -1))
+#In case of unprocessed sequences are left, let's wait
+if not processed:
+    q.join()
 
 count = 1
 ir_arr = []
@@ -260,5 +259,5 @@ for ir in gff_buff:
 
 SeqIO.write(ir_arr, "results/" + args.jobname + "/ir.fasta" , "fasta")
 print ""
-makelog("Found %i ir in" % (count - 1,))
+makelog("Found %i inverted repeats in" % (count - 1,))
 makelog(cur_time())
