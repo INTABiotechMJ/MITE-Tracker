@@ -231,7 +231,8 @@ output_gff.write("##gff-version 3\n")
 res = pd.DataFrame()
 for idx, row in df.iterrows():
     #start,end,record,ir_len,ir_1 = row[1],row[2],row[3],row[4],row[5]
-    res = pd.concat([res, df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]])
+    res1 = df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]
+    res = pd.concat([res, res1])
 df.drop(res.index,inplace=True)
 
 irs_seqs = []
