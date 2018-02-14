@@ -28,7 +28,8 @@ parser = argparse.ArgumentParser()#pylint: disable=invalid-name
 parser.add_argument("-g", "--genome", help="Genome file in fasta format", required=True)
 parser.add_argument("-j","--jobname", help="Will create files under a folder called [jobname]", required=True)
 parser.add_argument("-w","--workers", help="Max number of processes to use simultaneously", type=int, default=1)
-parser.add_argument("--max_sep_len", help="MITE max lenght", type=int, default=650)
+parser.add_argument("--max_sep_len", help="IR max separation lenght", type=int, default=650)
+parser.add_argument("--min_total_len", help="Min total lenght", type=int, default=650)
 parser.add_argument("--align_min_len", help="TIR minimun aligmnent length", type=int, default=10)
 args = parser.parse_args()#pylint: disable=invalid-name
 
@@ -48,16 +49,14 @@ logging.basicConfig(
     format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
 
 
-MIN_TSD_LEN = args.tsd_min_len
-MAX_TSD_LEN = args.tsd_max_len
-MITE_MAX_LEN = args.mite_max_len
-MITE_MIN_LEN = args.mite_min_len
-TIR_ALIGN_MIN_LEN = args.tir_align_min_len
+max_sep_len = args.max_sep_len
+min_total_len = args.min_total_len
+align_min_len = args.align_min_len
 
-def _parse(q):
+def _findIR(q):
     global last_porc
     global total_queue_count
-    global mites
+    global irs
     while True:
         try:
             seq, split_index, record_id = q.get(timeout=10)
@@ -65,7 +64,7 @@ def _parse(q):
             q.task_done()
             break
         splited_len = len(seq)
-        if lcc_simp(seq) < 0.6: #Discard really low complexity MITE
+        if lcc_simp(seq) < 0.6: #Discard really low complexity IR
             q.task_done()
             continue
         seq_rc = str(Seq(seq).reverse_complement())
@@ -105,7 +104,7 @@ def _parse(q):
             mismatch = int(row[6])
             gaps = int(row[7])
             #filter valids IR
-            if length < TIR_ALIGN_MIN_LEN:
+            if length < align_min_len:
                 continue
 
             #subject transform cause it was reversed
@@ -129,75 +128,36 @@ def _parse(q):
                 ir_1_end = transform_send
                 ir_2_start = qstart
                 ir_2_end = qend
-            #validate distance between IR
-            #print "-----"
-            #print ir_1_start, ir_1_end
-            #print ir_2_start, ir_2_end
-            #print seq_q, seq_s
-            if ir_2_end - ir_1_start > MITE_MAX_LEN:
+
+            if ir_2_end - ir_1_start > max_sep_len:
              #   print "discarded by far"
                 continue
-            if ir_2_end - ir_1_start < MITE_MIN_LEN:
+            if ir_2_end - ir_1_start < min_total_len:
               #  print "discarded by close"
                 continue
 
             #again validate complexity
             # a value of 1 means only two different nucleotides are present
             if lcc_simp(seq_q) <= 1.3:
-               # print "discarded by low complexity"
                 continue
 
-            #validate TSD outside TIRs
-            i = MAX_TSD_LEN
-            valid_tsd = False
-            while i >= MIN_TSD_LEN:
-                tsd_one = seq[ir_1_start - i:ir_1_start]
-                tsd_two = seq[ir_2_end:ir_2_end + i]
-                if tsd_one.lower() == tsd_two.lower():
-                    valid_tsd = True
-                    mite_pos_one = ir_1_start - i
-                    mite_pos_two = ir_2_end + i
-                    tsd_in = 'no'
-                #    print "valid"
-                    break
-                i -= 1
-            #validate TSD inside TIRs
-            #TSDs cannot be a large part of TIRs
-            if not valid_tsd:
-                i = MAX_TSD_LEN
-                while i >= MIN_TSD_LEN:
-                    tsd_one = seq[ir_1_start:ir_1_start+i]
-                    tsd_two = seq[ir_2_end-i:ir_2_end]
-                    if tsd_one.lower() == tsd_two.lower():
-                        valid_tsd = True
-                        mite_pos_one = ir_1_start
-                        mite_pos_two = ir_2_end 
-                        tsd_in = 'yes'
-                 #       print "valid"
-                        break
-                    i -= 1
-            if not valid_tsd:
-                #print "no tsd"
-                continue
-            mite = seq[mite_pos_one:mite_pos_two]
-            mite_len = mite_pos_two - mite_pos_one
 
-            #calculate positions in full sequence
-            mite_start_full = mite_pos_one + split_index
-            mite_end_full = mite_pos_two + split_index 
+            ir_seq = seq[ir_1_start:ir_2_end]
+            ir_len = ir_2_end - ir_1_start
+
             with l_lock:
-                mite = {'mite': mite, 'id':record.id, 
-                        'start':mite_start_full, 'end':mite_end_full, 
-                        'len':mite_len, 'tsd':tsd_one, 'tsd_in':tsd_in
+                ir = {'ir': ir_seq, 'id':record.id, 
+                        'start':ir_1_start, 'end':ir_2_end, 
+                        'len':ir_len,
                         } 
-                mites.append(mite)
+                irs.append(ir)
         porc = (total_queue_count - q.unfinished_tasks) * 100 / total_queue_count
         if porc - last_porc >= 10:
             print '%i%% ' % porc,
             last_porc = porc
             sys.stdout.flush()
         q.task_done()
-#-soft_masking false -dust no
+
 start_time = time.time()
 makelog("Counting sequences: ")
 fh = open(args.genome)
@@ -210,17 +170,17 @@ makelog(n)
 fh.close()
 
 fasta_seq = SeqIO.parse(args.genome, 'fasta')
-mites = []
+irs = []
 l_lock = Lock()
 count = 1
 record_count = 0
 
 q = Queue.Queue(maxsize=0)
 for i in range(args.workers):
-    worker = Thread(target=_parse, args=(q,))
+    worker = Thread(target=_findIR, args=(q,))
     worker.setDaemon(True)
     worker.start()
-windows_size = int(ceil(MITE_MAX_LEN * 2))
+windows_size = int(ceil(max_sep_len * 2))
 
 #processes until certain amount of sequences
 #stablish a balance between memory usage and processing
@@ -233,17 +193,17 @@ for record in fasta_seq:
     last_porc = -5
     record_count += 1
     porc_ant = 0
-    split_index = MAX_TSD_LEN
+    split_index = 0
     clean_seq = ''.join(str(record.seq).splitlines())
     seq_len = len(clean_seq)
 
-    while split_index < seq_len - MITE_MIN_LEN:
+    while split_index < seq_len - min_total_len:
         seq = clean_seq[split_index:split_index + windows_size]
         q.put((seq, split_index,record.id,))
         queue_count += 1
         total_queue_count += 1
-        split_index += MITE_MAX_LEN
-        current_processing_size += MITE_MAX_LEN
+        split_index += max_sep_len
+        current_processing_size += max_sep_len
     params = (record.id, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
     makelog("Adding %s %i out of %i(%i%% of total in %s)" % params)
     #in order to avoid overloading of memory, we add a join()
@@ -260,53 +220,53 @@ q.join()
 #    q.put((-1, -1))
 
 count = 1
-mites_arr = []
+ir_arr = []
 gff_buff = []
 
 #delete duplicated
 id_1 = 1
-unique_mites = []
-for mite in mites:
-    mites_2 = mites[id_1:]
+unique_ir = []
+for ir in irs:
+    ir_2s = ir[id_1:]
     duplicated = False
-    for mite_2 in mites_2:
-        if mite['id'] == mite_2['id'] and mite['start'] == mite_2['start'] and mite_2['end'] == mite['end']: 
+    for ir_2 in ir_2s:
+        if ir['id'] == ir_2['id'] and ir['start'] == ir_2['start'] and ir_2['end'] == ir['end']: 
             duplicated = True
     if not duplicated:
-        unique_mites.append(mite)
+        unique_ir.append(ir)
     id_1 += 1
-mites = unique_mites
+ir = unique_ir
 
 #delete nested
 id_1 = 0
-for mite in mites:
+for ir in irs:
     id_1 +=1
     nested = False
     id_2 = 0
-    for mite_2 in mites:
+    for ir_2 in irs:
         id_2 += 1
         if id_1 == id_2:
             continue
-        if mite['id'] == mite_2['id'] and mite['start'] >= mite_2['start'] and mite_2['end'] >= mite['end']: 
-            #mite is nested in mite_2
+        if ir['id'] == ir_2['id'] and ir['start'] >= ir_2['start'] and ir_2['end'] >= ir['end']: 
+            #ir is nested in ir_2
             nested = True
     if not nested:
-        params = (mite['id'], mite['start'], mite['end'], mite['len'], mite['tsd'], mite['tsd_in'], mite['tir_1'], mite['tir_2'] )
-        description = "SEQ:%s START:%i END:%i MITE_LEN:%i TSD:%s TSD_IN:%s TIR_1:%s TIR_2:%s" % (params)
-        mite_seq_rec = SeqRecord(Seq(mite['mite']), id='MITE_' + str(count), description = description)
-        mites_arr.append( mite_seq_rec)
-        mite_new = {'from': mite['id'], 'id':'MITE_' + str(count),'start':mite['start'], 'end':mite['end']}
-        gff_buff.append(mite_new) 
+        params = (ir['id'], ir['start'], ir['end'], ir['len'])
+        description = "SEQ:%s START:%i END:%i ir_LEN:%i" % (params)
+        ir_seq_rec = SeqRecord(Seq(ir['ir']), id='ir_' + str(count), description = description)
+        ir_arr.append( ir_seq_rec)
+        ir_new = {'from': ir['id'], 'id':'ir_' + str(count),'start':ir['start'], 'end':ir['end']}
+        gff_buff.append(ir_new) 
         count += 1
 
 #gff
-output_gff = open("results/" + args.jobname + "/mites.gff3","w") 
+output_gff = open("results/" + args.jobname + "/ir.gff3","w") 
 output_gff.write("##gff-version 3\n")
-for mite in gff_buff:
-    write_row =  '\t'.join([ mite['from'], 'miteParser','MITE',str(mite['start']), str(mite['end']),'.','+','.','ID='+mite['id'] ]) 
+for ir in gff_buff:
+    write_row =  '\t'.join([ ir['from'], 'irParser','ir',str(ir['start']), str(ir['end']),'.','+','.','ID='+ir['id'] ]) 
     output_gff.write(write_row + '\n')
 
-SeqIO.write(mites_arr, "results/" + args.jobname + "/mites.fasta" , "fasta")
+SeqIO.write(ir_arr, "results/" + args.jobname + "/ir.fasta" , "fasta")
 print ""
-makelog("Found %i MITES in" % (count - 1,))
+makelog("Found %i ir in" % (count - 1,))
 makelog(cur_time())
