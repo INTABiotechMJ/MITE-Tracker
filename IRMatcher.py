@@ -82,18 +82,20 @@ def _findIR(q):
         '-max_target_seqs','1',
         '-penalty','-4',
         '-word_size','7',#'-ungapped',
-        '-evalue','1','-strand',"plus",
-        #'-soft_masking','false' ,'-dust','no',
+        '-evalue','150','-strand',"plus",
+        '-soft_masking','false' ,'-dust','no',
         '-outfmt',"'6 sstart send qstart qend score length mismatch gaps gapopen nident'"]
         cmd = ' '.join(cmd_list)
         p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/bash')
         out,err = p.communicate()
-        #blast_process = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
-        #out,err = blast_process.communicate()
+        if err:
+            print err
         os.remove(query_filename)
         os.remove(subject_filename)
         lines = out.splitlines()
         found = 0
+        #print split_index, split_index + splited_len,
+        #print len(lines)
         for row in lines:
             row = row.split()
             sstart = int(row[0])
@@ -107,7 +109,6 @@ def _findIR(q):
             #filter valids IR
             if length < align_min_len:
                 continue
-
 
             #subject transform cause it was reversed
             sstart = splited_len - sstart 
@@ -171,7 +172,7 @@ for i in range(args.workers):
     worker = Thread(target=_findIR, args=(q,))
     worker.setDaemon(True)
     worker.start()
-windows_size = int(ceil(max_sep_len * 2))
+windows_size = int(ceil(max_sep_len * 30))
 
 #processes until certain amount of sequences
 #stablish a balance between memory usage and processing
@@ -192,8 +193,8 @@ for record in fasta_seq:
         q.put((seq, split_index,record.id,))
         queue_count += 1
         total_queue_count += 1
-        split_index += max_sep_len
-        current_processing_size += max_sep_len
+        split_index += windows_size - max_sep_len
+        current_processing_size += windows_size  - max_sep_len
     #print ""
     params = (record.id, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
     makelog("Adding %s %i out of %i(%i%% of total in %s)" % params)
