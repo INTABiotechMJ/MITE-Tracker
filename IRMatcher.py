@@ -229,6 +229,7 @@ output_gff = open("results/" + args.jobname + "/IR.gff3","w")
 output_gff.write("##gff-version 3\n")
 
 res = pd.DataFrame()
+df = df.reset_index(drop=True)
 for idx, row in df.iterrows():
     #start,end,record,ir_len,ir_1 = row[1],row[2],row[3],row[4],row[5]
     res1 = df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]
