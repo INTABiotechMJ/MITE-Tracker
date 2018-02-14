@@ -229,6 +229,7 @@ output_gff = open("results/" + args.jobname + "/IR.gff3","w")
 output_gff.write("##gff-version 3\n")
 
 l=[]
+df = df.reindex()
 for idx, row in df.iterrows():
     res1 = df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]
     l.append(res1)
