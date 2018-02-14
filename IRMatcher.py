@@ -61,7 +61,6 @@ def _findIR(q):
         try:
             seq, split_index, record_id = q.get(timeout=10)
         except Queue.Empty:
-            q.task_done()
             break
         splited_len = len(seq)
         if lcc_simp(seq) < 0.6: #Discard really low complexity IR
