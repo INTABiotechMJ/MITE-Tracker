@@ -134,9 +134,9 @@ def _findIR(q):
 
             #ir_new = {'ir': ir_seq, 'id':record.id, 
             #        'len':ir_len,'ir_1':seq_q,'ir_2':seq_q_prime}
+            new_element = (ir_start, ir_end,ir_seq, record.id, ir_len, seq_q, seq_q_prime)
             with l_lock:
-                new_element = [ir_start, ir_end,ir_seq, record.id, ir_len, seq_q, seq_q_prime]
-                df.loc[len(df)] = new_element
+                irs.append(new_element)
                 #tree.addi(ir_start, ir_end, ir_new)
 
                 """
@@ -186,8 +186,8 @@ windows_size = 20000 #int(ceil(max_sep_len * 30))
 max_queue_size = 50
 current_processing_size = 0
 #initialize global variables
+
 irs = []
-df = pd.DataFrame(columns=['start','end','seq','record','len','ir_1','ir_2'])
 l_lock = Lock()
 
 count = 1
@@ -221,15 +221,17 @@ for record in fasta_seq:
         #small sequences at once
 
 #In case of unprocessed sequences are left, let's wait
-if not processed:
-    q.join()
+q.join()
+labels = ['start','end','seq','record','len','ir_1','ir_2']
+df = pd.DataFrame.from_records(irs, columns=labels)
 
 makelog("Creating gff and fasta")
 output_gff = open("results/" + args.jobname + "/IR.gff3","w") 
 output_gff.write("##gff-version 3\n")
 
 res = pd.DataFrame(columns=['start','end','seq','record','len','ir_1','ir_2'])
-df = df.reset_index(drop=True)
+#df = df.reset_index(drop=True)
+
 for idx, row in df.iterrows():
     #start,end,record,ir_len,ir_1 = row[1],row[2],row[3],row[4],row[5]
     res1 = df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]
