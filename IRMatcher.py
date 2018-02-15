@@ -51,7 +51,6 @@ min_total_len = args.min_total_len
 align_min_len = args.align_min_len
 
 def _findIR(q):
-    global last_porc
     global total_queue_count
     global intersecter
     global irs
@@ -88,9 +87,6 @@ def _findIR(q):
         os.remove(query_filename)
         os.remove(subject_filename)
         lines = out.splitlines()
-        found = 0
-        #print split_index, split_index + splited_len,
-        #print len(lines)
         for row in lines:
             row = row.split()
             sstart = int(row[0])
@@ -104,20 +100,16 @@ def _findIR(q):
             #filter valids IR
             if length < align_min_len:
                 continue
-
             #subject transform cause it was reversed
             sstart = splited_len - sstart 
             send = splited_len - send 
-
             #obtain IR sequences
             seq_q = seq[qstart:qend]
             seq_q_prime = seq[send:sstart]
-
             #organice positions
             ir_start = min(qstart,qend,sstart,send)
             ir_end = max(qstart,qend,sstart,send)
             ir_len = ir_end - ir_start
-
             #length constraints
             if ir_len > max_sep_len:
                 continue
@@ -125,39 +117,14 @@ def _findIR(q):
                 continue
             #move in genome, split index
             ir_seq = seq[ir_start:ir_end]
-
             ir_start += split_index
             ir_end += split_index
             #again validate complexity, a value of 1 means only two different nucleotides are present
             if lcc_simp(seq_q) <= 1.2:
                 continue
-
-            #ir_new = {'ir': ir_seq, 'id':record.id, 
-            #        'len':ir_len,'ir_1':seq_q,'ir_2':seq_q_prime}
             new_element = (ir_start, ir_end,ir_seq, record.id, ir_len, seq_q, seq_q_prime)
             with l_lock:
                 irs.append(new_element)
-                #tree.addi(ir_start, ir_end, ir_new)
-
-                """
-                nested = False
-                for ir in irs[:]:
-                    #is it nested into another?
-                    if ir['id'] == ir_new['id'] and ir['start'] <= ir_new['start'] and ir['end'] >= ir_new['end']:
-                        nested = True
-                    #another is nested in this one
-                    if ir['id'] == ir_new['id'] and ir['start'] >= ir_new['start'] and ir['end'] <= ir_new['end']:
-                        irs.remove(ir)
-                if not nested:
-                    #append in a list
-                    found += 1
-                    irs.append(ir_new)
-                """
-        porc = split_index * 100 / seq_len
-        if porc - last_porc >= 10:
-            print '%i%% ' % porc,
-            last_porc = porc
-            sys.stdout.flush()
         q.task_done()
 
 start_time = time.time()
@@ -182,14 +149,12 @@ windows_size = 20000 #int(ceil(max_sep_len * 30))
 
 #processes until certain amount of sequences
 #stablish a balance between memory usage and processing
-# delete max_processing_size = windows_size * 20
 max_queue_size = 50
 current_processing_size = 0
 #initialize global variables
-
 irs = []
 l_lock = Lock()
-
+#start adding sequences to process queue
 count = 1
 record_count = 0
 fasta_seq = SeqIO.parse(args.genome, 'fasta')
@@ -197,13 +162,13 @@ for record in fasta_seq:
     processed = False
     total_queue_count = 1
     queue_count = 1
-    last_porc = -5
     record_count += 1
     porc_ant = 0
     split_index = 0
     clean_seq = ''.join(str(record.seq).splitlines())
     seq_len = len(clean_seq)
     params = (record.id, seq_len, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
+    print ""
     makelog("Adding %s (len %i) %i/%i (%i%% of total sequences in %s)" % params)
     while split_index < seq_len - min_total_len:
         seq = clean_seq[split_index:split_index + windows_size]
@@ -222,31 +187,24 @@ for record in fasta_seq:
 
 #In case of unprocessed sequences are left, let's wait
 q.join()
-labels = ['start','end','seq','record','len','ir_1','ir_2']
-df = pd.DataFrame.from_records(irs, columns=labels)
 
 makelog("Creating gff and fasta")
 output_gff = open("results/" + args.jobname + "/IR.gff3","w") 
 output_gff.write("##gff-version 3\n")
 
-res = pd.DataFrame(columns=['start','end','seq','record','len','ir_1','ir_2'])
-#df = df.reset_index(drop=True)
+labels = ['start','end','seq','record','len','ir_1','ir_2']
+df = pd.DataFrame.from_records(irs, columns=labels)
 
-for idx, row in df.iterrows():
-    #start,end,record,ir_len,ir_1 = row[1],row[2],row[3],row[4],row[5]
-    res1 = df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]
-    res = pd.concat([res, res1])
-df.drop(res.index,inplace=True)
-
-"""
+#filter out nested (keep larger)
 l=[]
 for idx, row in df.iterrows():
-    res1 = df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]
-    l.append(res1)
-pd.concat(l)
-"""
+    res = df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]
+    l.append(res)
+res = pd.concat(l)
+df.drop(res.index,inplace=True)
 
 irs_seqs = []
+df = df.sort_values(by=['start','end'])
 for _, row in df.iterrows():
     count += 1
     name = 'IR_' + str(count)
@@ -263,84 +221,3 @@ SeqIO.write(irs_seqs, "results/" + args.jobname + "/IR.fasta" , "fasta")
 print ""
 makelog("Found %i inverted repeats in" % (count - 1,))
 makelog(cur_time())
-
-
-"""
-for node in tree.items():
-    start = list(node)[0]
-    end = list(node)[1]
-    print start,end
-    tree.remove_envelop(start,end)
-
-irs_seqs = []
-count = 0
-for node in tree.items():
-    ir = list(node)[2]
-    count += 1
-    name = 'IR_' + str(count)
-    #append sequence record for biopython
-    params = (ir['id'], ir['start'], ir['end'], ir['len'], ir['ir_1'], ir['ir_2'])
-    description = "SEQ:%s START:%i END:%i IR_LEN:%i IR_1:%s IR_2:%s " % (params)
-    ir_seq_rec = SeqRecord(Seq(ir['ir']), id=name, description = description)
-    irs_seqs.append(ir_seq_rec)
-
-    write_row = '\t'.join([ ir['id'], 'IRMatcher','inverted_repeat',str(ir['start']), str(ir['end']),'.','+','.','ID='+name ]) 
-    output_gff.write(write_row + '\n')
-
-
-makelog("Writing fasta")
-SeqIO.write(irs_seqs, "results/" + args.jobname + "/IR.fasta" , "fasta")
-print ""
-makelog("Found %i inverted repeats in" % (count - 1,))
-makelog(cur_time())
-
-"""
-
-"""
-print len(irs)
-makelog("Deleting duplicated")
-#delete duplicated
-id_1 = 1
-unique_ir = []
-for ir in irs:
-    ir_2s = irs[id_1:]
-    duplicated = False
-    for ir_2 in ir_2s:
-        if ir['id'] == ir_2['id'] and ir['start'] == ir_2['start'] and ir_2['end'] == ir['end']: 
-            duplicated = True
-    if not duplicated:
-        unique_ir.append(ir)
-    id_1 += 1
-irs = unique_ir
-print len(irs)
-makelog("Deleting nested")
-#delete nested
-id_1 = 0
-for ir in irs:
-    id_1 +=1
-    nested = False
-    id_2 = 0
-    for ir_2 in irs:
-        id_2 += 1
-        if id_1 == id_2:
-            continue
-        if ir['id'] == ir_2['id'] and ir['start'] >= ir_2['start'] and ir_2['end'] >= ir['end']: 
-            #ir is nested in ir_2
-            nested = True
-    if not nested:
-        params = (ir['id'], ir['start'], ir['end'], ir['len'], ir['ir1'], ir['ir2'])
-        description = "SEQ:%s START:%i END:%i ir_LEN:%i IR_1:%s IR_2:%s " % (params)
-        ir_seq_rec = SeqRecord(Seq(ir['ir']), id='ir_' + str(count), description = description)
-        ir_arr.append( ir_seq_rec)
-        ir_new = {'from': ir['id'], 'id':'ir_' + str(count),'start':ir['start'], 'end':ir['end']}
-        gff_buff.append(ir_new) 
-        count += 1
-#gff
-print len(ir_arr)
-makelog("Creating gff")
-output_gff = open("results/" + args.jobname + "/ir.gff3","w") 
-output_gff.write("##gff-version 3\n")
-for ir in gff_buff:
-    write_row =  '\t'.join([ ir['from'], 'irParser','ir',str(ir['start']), str(ir['end']),'.','+','.','ID='+ir['id'] ]) 
-    output_gff.write(write_row + '\n')
-"""
