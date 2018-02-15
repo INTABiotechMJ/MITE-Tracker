@@ -198,9 +198,11 @@ df = pd.DataFrame.from_records(irs, columns=labels)
 #filter out nested (keep larger)
 l=[]
 for idx, row in df.iterrows():
-    res = df[(df.index != idx) & (df.start >= row.start) & (df.end <= row.end)]
+    #filter all that are nested into this
+    res = df[(df.record == row.record) & (df.start >= row.start) & (df.end <= row.end) & (df.index != idx) ]
     l.append(res)
 res = pd.concat(l)
+#remove all nested
 df.drop(res.index,inplace=True)
 
 irs_seqs = []
