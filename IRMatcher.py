@@ -228,7 +228,7 @@ makelog("Creating gff and fasta")
 output_gff = open("results/" + args.jobname + "/IR.gff3","w") 
 output_gff.write("##gff-version 3\n")
 
-res = pd.DataFrame()
+res = pd.DataFrame(columns=['start','end','seq','record','len','ir_1','ir_2'])
 df = df.reset_index(drop=True)
 for idx, row in df.iterrows():
     #start,end,record,ir_len,ir_1 = row[1],row[2],row[3],row[4],row[5]
