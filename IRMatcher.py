@@ -88,9 +88,9 @@ def _findIR(q):
         '-evalue','145',
         '-strand',"plus",
         #'-soft_masking','false' ,'-dust','no',
-        '-outfmt',"'6 sstart send qstart qend score length mismatch gaps gapopen nident'"]
+        '-outfmt',"6 sstart send qstart qend score length mismatch gaps gapopen nident"]
         cmd = ' '.join(cmd_list)
-        p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/bash')
+        p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
         out,err = p.communicate()
         if err:
             q.task_done
@@ -240,9 +240,7 @@ for record in fasta_seq:
 #In case of unprocessed sequences are left, let's wait
 q.join()
 
-makelog("Creating gff and fasta")
-output_gff = open("results/" + args.jobname + "/mites.candidates.gff3","w") 
-output_gff.write("##gff-version 3\n")
+makelog("Creating candidates fasta")
 
 labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right']
 df = pd.DataFrame.from_records(irs, columns=labels)
@@ -284,23 +282,22 @@ for _, row in df.iterrows():
     fs_seq_rec = SeqRecord(Seq(row.fs_right), id=name + "R", description = "_") 
     fs_seqs.append(fs_seq_rec)
 
-    write_row = '\t'.join([ row.record, 'miteParser','mite',str(row.start), str(row.end),'.','+','.','ID='+name ])
-    output_gff.write(write_row + '\n')
     count += 1
 makelog("Writing candidates sequences")
 candidates_fasta = "results/" + args.jobname + "/mites.candidates.fasta"
 SeqIO.write(irs_seqs, candidates_fasta , "fasta")
-SeqIO.write(fs_seqs, "results/" + args.jobname + "/flanking_seqs.candidates.fasta" , "fasta")
+
+flanking_seqs_name = "results/" + args.jobname + "/flanking_seqs.candidates.fasta"
+SeqIO.write(fs_seqs, flanking_seqs_name , "fasta")
 
 #group elements
 cmd_list = [
 'blastn',
 '-query',candidates_fasta,
 '-subject',candidates_fasta,
-'-evalue','1e10',
+'-evalue','1e3',
 '-outfmt',"6"]
-cmd = ' '.join(cmd_list)
-p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/bash')
+p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
 out,err = p.communicate()
 if err:
     q.task_done
@@ -336,6 +333,95 @@ for row in lines:
         new_set = set(chain.from_iterable(res))
         families.append(new_set)
 
-print ""
-makelog("Found %i inverted repeats in" % (count - 1,))
+
+#group flanking sequences
+cmd_list = [
+'blastn',
+'-query',flanking_seqs_name,
+'-subject',flanking_seqs_name,
+'-evalue','1e3',
+'-outfmt',"6"]
+p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
+out,err = p.communicate()
+if err:
+    q.task_done
+    makelog("BLASTN error: %s" % (err, ) )
+lines = out.splitlines()
+from itertools import chain
+fs_families = []
+for row in lines:
+    row = row.split()
+    query = row[0]
+    subject = row[1]
+    if query == subject:
+        continue
+    res = []
+    for family in fs_families:
+        if query in family or subject in family:
+            res.append(family)
+    if len(res) == 0:
+        new_set = set([query[:-1], subject[:-1]])
+        fs_families.append(new_set)
+    elif len(res) == 1:
+        res[0].add(query[:-1])
+        res[0].add(subject[:-1])
+    else:
+        for r in res:
+            try:
+                fs_families.remove(r)
+            except ValueError:
+                print ">>",fs_families
+                print "-->",res
+                print "->",r
+                exit()
+        new_set = set(chain.from_iterable(res))
+        fs_families.append(new_set)
+
+shared = set()
+for family in families:
+        for fs_family in fs_families:
+            shared = shared | family.intersection(fs_family)
+
+#save definitive elements
+families = list(families)
+
+irs_seqs = []
+df = df.sort_values(by=['record','start','end'])
+count = 1
+count_real = 1
+output_gff = open("results/" + args.jobname + "/mites.gff3","w") 
+output_gff.write("##gff-version 3\n")
+
+for _, row in df.iterrows():
+    if "IR_" + str(count) in shared:
+        count += 1
+        continue
+    count += 1
+    
+    idx = 0
+    family_number = 0
+    for family in families:
+        idx += 1
+        if "IR_" + str(count) in family:
+            family_number = idx
+
+    if family_number == 0:
+        continue
+    
+    name = 'IR_' + str(count_real)
+    #append sequence record for biopython
+    params = (row.record, row.start, row.end, family_number , row.tsd, row.tsd_in, row.len, row.ir_1, row.ir_2)
+    description = "SEQ:%s START:%i END:%i FAMILY:%s TSD:%s TSD_IN:%s MITE_LEN:%i IR_1:%s IR_2:%s " % (params)
+    ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
+    irs_seqs.append(ir_seq_rec)
+    
+    write_row = '\t'.join([ row.record, 'miteParser','mite',str(row.start), str(row.end),'.','+','.','ID='+name ])
+    output_gff.write(write_row + '\n')
+    count_real += 1
+
+makelog("Writing definitive sequences")
+SeqIO.write(irs_seqs, "results/" + args.jobname + "/mites.fasta" , "fasta")
+
+makelog("Discarded %i by flanking sequence and inner similarity" % (count - count_real),))
+makelog("Found %i MITEs in" % (count_real - 1,))
 makelog(cur_time())
