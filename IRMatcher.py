@@ -31,6 +31,9 @@ parser.add_argument("-w","--workers", help="Max number of processes to use simul
 parser.add_argument("--max_sep_len", help="IR max separation lenght", type=int, default=650)
 parser.add_argument("--min_total_len", help="Min total lenght", type=int, default=50)
 parser.add_argument("--align_min_len", help="TIR minimun aligmnent length", type=int, default=10)
+parser.add_argument("--tsd_min_len", help="TSD min lenght", type=int, default=2)
+parser.add_argument("--tsd_max_len", help="TSD max lenght", type=int, default=10)
+
 args = parser.parse_args()#pylint: disable=invalid-name
 
 #write results
@@ -49,6 +52,8 @@ logging.basicConfig(
 max_sep_len = args.max_sep_len
 min_total_len = args.min_total_len
 align_min_len = args.align_min_len
+MIN_TSD_LEN = args.tsd_min_len
+MAX_TSD_LEN = args.tsd_max_len
 
 def _findIR(q):
     global total_queue_count
@@ -61,6 +66,7 @@ def _findIR(q):
             break
         splited_len = len(seq)
         seq_rc = str(Seq(seq).reverse_complement())
+        complexity = lcc_simp(seq)
         record_q = SeqRecord(Seq(seq), id = record_id)
         record_s = SeqRecord(Seq(seq_rc), id = record_id + "_rc")
         query_filename = "tmp/query" + str(record_id + "_" + str(split_index))+".tmp"
@@ -74,9 +80,11 @@ def _findIR(q):
         '-reward','2',
         '-max_target_seqs','1',
         '-penalty','-4',
-        '-word_size','7',#'-ungapped',
-        '-evalue','150','-strand',"plus",
-        '-soft_masking','false' ,'-dust','no',
+        '-word_size','8',
+        #'-ungapped',
+        '-evalue','145',
+        '-strand',"plus",
+        #'-soft_masking','false' ,'-dust','no',
         '-outfmt',"'6 sstart send qstart qend score length mismatch gaps gapopen nident'"]
         cmd = ' '.join(cmd_list)
         p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/bash')
@@ -116,13 +124,51 @@ def _findIR(q):
             if ir_len < min_total_len:
                 continue
             #move in genome, split index
-            ir_seq = seq[ir_start:ir_end]
-            ir_start += split_index
-            ir_end += split_index
+            #ir_seq = seq[ir_start:ir_end]
+
             #again validate complexity, a value of 1 means only two different nucleotides are present
             if lcc_simp(seq_q) <= 1.2:
                 continue
-            new_element = (ir_start, ir_end,ir_seq, record.id, ir_len, seq_q, seq_q_prime)
+
+            #validate TSD outside TIRs
+            i = MAX_TSD_LEN
+            valid_tsd = False
+            while i >= MIN_TSD_LEN:
+                tsd_one = seq[ir_start - i:ir_start]
+                tsd_two = seq[ir_end:ir_end + i]
+                if tsd_one.lower() == tsd_two.lower():
+                    valid_tsd = True
+                    mite_pos_one = ir_start - i
+                    mite_pos_two = ir_end + i
+                    tsd_in = 'no'
+                    break
+                i -= 1
+            #validate TSD inside TIRs
+            #TSDs cannot be a large part of TIRs
+            if not valid_tsd:
+                i = MAX_TSD_LEN
+                while i >= MIN_TSD_LEN:
+                    tsd_one = seq[ir_start:ir_start+i]
+                    tsd_two = seq[ir_end-i:ir_end]
+                    if tsd_one.lower() == tsd_two.lower():
+                        valid_tsd = True
+                        mite_pos_one = ir_start
+                        mite_pos_two = ir_end 
+                        tsd_in = 'yes'
+                        break
+                    i -= 1
+            #"no tsd"
+            if not valid_tsd:
+                continue
+
+            ir_seq = seq[mite_pos_one:mite_pos_two]
+            ir_len = mite_pos_two - mite_pos_one
+
+            #calculate positions in full sequence
+            mite_start_full = mite_pos_one + split_index
+            mite_end_full = mite_pos_two + split_index 
+
+            new_element = (mite_start_full, mite_end_full, ir_seq, record.id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in)
             with l_lock:
                 irs.append(new_element)
         q.task_done()
@@ -155,7 +201,6 @@ current_processing_size = 0
 irs = []
 l_lock = Lock()
 #start adding sequences to process queue
-count = 1
 record_count = 0
 fasta_seq = SeqIO.parse(args.genome, 'fasta')
 for record in fasta_seq:
@@ -164,13 +209,13 @@ for record in fasta_seq:
     queue_count = 1
     record_count += 1
     porc_ant = 0
-    split_index = 0
+    split_index = MAX_TSD_LEN
     clean_seq = ''.join(str(record.seq).splitlines())
     seq_len = len(clean_seq)
     params = (record.id, seq_len, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
     print ""
     makelog("Adding %s (len %i) %i/%i (%i%% of total sequences in %s)" % params)
-    while split_index < seq_len - min_total_len:
+    while split_index < seq_len - MIN_TSD_LEN:
         seq = clean_seq[split_index:split_index + windows_size]
         q.put((seq, split_index,record.id,seq_len,))
         queue_count += 1
@@ -189,10 +234,10 @@ for record in fasta_seq:
 q.join()
 
 makelog("Creating gff and fasta")
-output_gff = open("results/" + args.jobname + "/IR.gff3","w") 
+output_gff = open("results/" + args.jobname + "/mites.candidates.gff3","w") 
 output_gff.write("##gff-version 3\n")
 
-labels = ['start','end','seq','record','len','ir_1','ir_2']
+labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in']
 df = pd.DataFrame.from_records(irs, columns=labels)
 
 #filter out nested (keep larger)
@@ -206,20 +251,20 @@ res = pd.concat(l)
 df.drop(res.index,inplace=True)
 
 irs_seqs = []
-df = df.sort_values(by=['start','end'])
+df = df.sort_values(by=['record','start','end'])
+count = 1
 for _, row in df.iterrows():
-    count += 1
     name = 'IR_' + str(count)
     #append sequence record for biopython
-    params = (row.record, row.start, row.end, row.len, row.ir_1, row.ir_2)
-    description = "SEQ:%s START:%i END:%i IR_LEN:%i IR_1:%s IR_2:%s " % (params)
+    params = (row.record, row.start, row.end, row.len, row.ir_1, row.ir_2, row.tsd, row.tsd_in)
+    description = "SEQ:%s START:%i END:%i IR_LEN:%i IR_1:%s IR_2:%s TSD:%s TSD_IN:%s" % (params)
     ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
     irs_seqs.append(ir_seq_rec)
-    write_row = '\t'.join([ row.record, 'IRMatcher','inverted_repeat',str(row.start), str(row.end),'.','+','.','ID='+name ])
+    write_row = '\t'.join([ row.record, 'miteParser','mite',str(row.start), str(row.end),'.','+','.','ID='+name ])
     output_gff.write(write_row + '\n')
-
+    count += 1
 makelog("Writing fasta")
-SeqIO.write(irs_seqs, "results/" + args.jobname + "/IR.fasta" , "fasta")
+SeqIO.write(irs_seqs, "results/" + args.jobname + "/mites.candidates.fasta" , "fasta")
 print ""
 makelog("Found %i inverted repeats in" % (count - 1,))
 makelog(cur_time())
