@@ -422,6 +422,6 @@ for _, row in df.iterrows():
 makelog("Writing definitive sequences")
 SeqIO.write(irs_seqs, "results/" + args.jobname + "/mites.fasta" , "fasta")
 
-makelog("Discarded %i by flanking sequence and inner similarity" % (count - count_real),))
+makelog("Discarded %i by flanking sequence and inner similarity" % (count - count_real))
 makelog("Found %i MITEs in" % (count_real - 1,))
 makelog(cur_time())
