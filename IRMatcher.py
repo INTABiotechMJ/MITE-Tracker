@@ -241,22 +241,22 @@ labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in']
 df = pd.DataFrame.from_records(irs, columns=labels)
 
 #filter out nested (keep larger)
-#l=[]
-#for idx, row in df.iterrows():
+l=[]
+for idx, row in df.iterrows():
     #filter all that are nested into this
-#    res = df[(df.record == row.record) & (df.start >= row.start) & (df.end <= row.end) & (df.index != idx) ]
-#    l.append(res)
-#res = pd.concat(l)
-#df.drop(res.index,inplace=True)
+    res = df[(df.record == row.record) & (df.start >= row.start) & (df.end <= row.end) & (df.index != idx) ]
+    l.append(res)
+res = pd.concat(l)
+df.drop(res.index,inplace=True)
 
 #remove all nested
-print len(df)
-df1 = df.reset_index()
-df1 = pd.merge(df1, df1, on='record')
-m = ((df1.start_x >= df1.start_y) & (df1.end_x <= df1.end_y) & (df1.index_x != df1.index_y))
-idx = df1.loc[m, 'index_x']
-df = df.drop(idx)
-print len(df)
+#print len(df)
+#df1 = df.reset_index()
+#df1 = pd.merge(df1, df1, on='record')
+#m = ((df1.start_x >= df1.start_y) & (df1.end_x <= df1.end_y) & (df1.index_x != df1.index_y))
+#idx = df1.loc[m, 'index_x']
+#df = df.drop(idx)
+#print len(df)
 
 irs_seqs = []
 df = df.sort_values(by=['record','start','end'])
