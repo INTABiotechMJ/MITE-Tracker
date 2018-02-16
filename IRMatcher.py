@@ -174,13 +174,9 @@ def _findIR(q):
             mite_start_full = mite_pos_one + split_index
             mite_end_full = mite_pos_two + split_index 
 
-            new_element = (mite_start_full, mite_end_full, ir_seq, record.id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in)
-            flanking_seq_element_l = ("L",mite_start_full, mite_end_full, record.id, flanking_seq_left)
-            flanking_seq_element_r = ("R",mite_start_full, mite_end_full, record.id, flanking_seq_right)
+            new_element = (mite_start_full, mite_end_full, ir_seq, record.id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in,flanking_seq_left,flanking_seq_right)
             with l_lock:
                 irs.append(new_element)
-                flanking_seqs.append(flanking_seq_element_l)
-                flanking_seqs.append(flanking_seq_element_r)
         q.task_done()
 
 start_time = time.time()
@@ -248,7 +244,7 @@ makelog("Creating gff and fasta")
 output_gff = open("results/" + args.jobname + "/mites.candidates.gff3","w") 
 output_gff.write("##gff-version 3\n")
 
-labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in']
+labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right']
 df = pd.DataFrame.from_records(irs, columns=labels)
 
 #filter out nested (keep larger)
@@ -269,6 +265,7 @@ df.drop(res.index,inplace=True)
 #df = df.drop(idx)
 #print len(df)
 
+fs_seqs = []
 irs_seqs = []
 df = df.sort_values(by=['record','start','end'])
 count = 1
@@ -279,23 +276,21 @@ for _, row in df.iterrows():
     description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i IR_1:%s IR_2:%s " % (params)
     ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
     irs_seqs.append(ir_seq_rec)
+
+    #flanking sequences
+    fs_seq_rec = SeqRecord(Seq(row.fs_left), id=name + "L", description = "_") 
+    fs_seqs.append(fs_seq_rec)
+    #flanking sequences
+    fs_seq_rec = SeqRecord(Seq(row.fs_right), id=name + "R", description = "_") 
+    fs_seqs.append(fs_seq_rec)
+
     write_row = '\t'.join([ row.record, 'miteParser','mite',str(row.start), str(row.end),'.','+','.','ID='+name ])
     output_gff.write(write_row + '\n')
     count += 1
 makelog("Writing candidates sequences")
 candidates_fasta = "results/" + args.jobname + "/mites.candidates.fasta"
 SeqIO.write(irs_seqs, candidates_fasta , "fasta")
-
-makelog("Writing candidates flanking sequences")
-flanking_seq_recs = []
-count = 1
-for fs in flanking_seqs:
-    params = (fs[0], fs[1], fs[2],fs[3])
-    description = "POSITION:%s START:%i END:%i ID:%s" % (params)
-    fs_rec = SeqRecord(Seq(fs[4]), id="fs_" + str(count), description = description)
-    flanking_seq_recs.append(fs_rec)
-    count += 1
-SeqIO.write(flanking_seq_recs, "results/" + args.jobname + "/flanking_seqs.candidates.fasta" , "fasta")
+SeqIO.write(fs_seqs, "results/" + args.jobname + "/flanking_seqs.candidates.fasta" , "fasta")
 
 #group elements
 cmd_list = [
