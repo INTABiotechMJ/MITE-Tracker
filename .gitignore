@@ -9,3 +9,4 @@ tmp/*.tmp
 results/*
 !results/.gitkeep 
 .vscode
+cdhit/

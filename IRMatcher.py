@@ -33,6 +33,7 @@ parser.add_argument("--min_total_len", help="Min total lenght", type=int, defaul
 parser.add_argument("--align_min_len", help="TIR minimun aligmnent length", type=int, default=10)
 parser.add_argument("--tsd_min_len", help="TSD min lenght", type=int, default=2)
 parser.add_argument("--tsd_max_len", help="TSD max lenght", type=int, default=10)
+parser.add_argument("--flanking_seq_len", help="Flanking seq length for comparison", type=int, default=50)
 
 args = parser.parse_args()#pylint: disable=invalid-name
 
@@ -54,11 +55,13 @@ min_total_len = args.min_total_len
 align_min_len = args.align_min_len
 MIN_TSD_LEN = args.tsd_min_len
 MAX_TSD_LEN = args.tsd_max_len
+FLANKING_SEQ_LEN = args.flanking_seq_len
 
 def _findIR(q):
     global total_queue_count
     global intersecter
     global irs
+    global flanking_seqs
     while True:
         try:
             seq, split_index, record_id,seq_len = q.get(timeout=5)
@@ -164,13 +167,20 @@ def _findIR(q):
             ir_seq = seq[mite_pos_one:mite_pos_two]
             ir_len = mite_pos_two - mite_pos_one
 
+            flanking_seq_left = seq[mite_pos_one - FLANKING_SEQ_LEN:mite_pos_one]
+            flanking_seq_right = seq[mite_pos_two:mite_pos_two + FLANKING_SEQ_LEN]
+
             #calculate positions in full sequence
             mite_start_full = mite_pos_one + split_index
             mite_end_full = mite_pos_two + split_index 
 
             new_element = (mite_start_full, mite_end_full, ir_seq, record.id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in)
+            flanking_seq_element_l = ("L",mite_start_full, mite_end_full, record.id, flanking_seq_left)
+            flanking_seq_element_r = ("R",mite_start_full, mite_end_full, record.id, flanking_seq_right)
             with l_lock:
                 irs.append(new_element)
+                flanking_seqs.append(flanking_seq_element_l)
+                flanking_seqs.append(flanking_seq_element_r)
         q.task_done()
 
 start_time = time.time()
@@ -199,6 +209,7 @@ max_queue_size = 50
 current_processing_size = 0
 #initialize global variables
 irs = []
+flanking_seqs = []
 l_lock = Lock()
 #start adding sequences to process queue
 record_count = 0
@@ -264,15 +275,72 @@ count = 1
 for _, row in df.iterrows():
     name = 'IR_' + str(count)
     #append sequence record for biopython
-    params = (row.record, row.start, row.end, row.len, row.ir_1, row.ir_2, row.tsd, row.tsd_in)
-    description = "SEQ:%s START:%i END:%i IR_LEN:%i IR_1:%s IR_2:%s TSD:%s TSD_IN:%s" % (params)
+    params = (row.record, row.start, row.end, row.tsd, row.tsd_in, row.len, row.ir_1, row.ir_2)
+    description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i IR_1:%s IR_2:%s " % (params)
     ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
     irs_seqs.append(ir_seq_rec)
     write_row = '\t'.join([ row.record, 'miteParser','mite',str(row.start), str(row.end),'.','+','.','ID='+name ])
     output_gff.write(write_row + '\n')
     count += 1
-makelog("Writing fasta")
-SeqIO.write(irs_seqs, "results/" + args.jobname + "/mites.candidates.fasta" , "fasta")
+makelog("Writing candidates sequences")
+candidates_fasta = "results/" + args.jobname + "/mites.candidates.fasta"
+SeqIO.write(irs_seqs, candidates_fasta , "fasta")
+
+makelog("Writing candidates flanking sequences")
+flanking_seq_recs = []
+count = 1
+for fs in flanking_seqs:
+    params = (fs[0], fs[1], fs[2],fs[3])
+    description = "POSITION:%s START:%i END:%i ID:%s" % (params)
+    fs_rec = SeqRecord(Seq(fs[4]), id="fs_" + str(count), description = description)
+    flanking_seq_recs.append(fs_rec)
+    count += 1
+SeqIO.write(flanking_seq_recs, "results/" + args.jobname + "/flanking_seqs.candidates.fasta" , "fasta")
+
+#group elements
+cmd_list = [
+'blastn',
+'-query',candidates_fasta,
+'-subject',candidates_fasta,
+'-evalue','1e10',
+'-outfmt',"6"]
+cmd = ' '.join(cmd_list)
+p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True, executable='/bin/bash')
+out,err = p.communicate()
+if err:
+    q.task_done
+    makelog("BLASTN error: %s" % (err, ) )
+lines = out.splitlines()
+from itertools import chain
+families = []
+for row in lines:
+    row = row.split()
+    query = row[0]
+    subject = row[1]
+    if query == subject:
+        continue
+    res = []
+    for family in families:
+        if query in family or subject in family:
+            res.append(family)
+    if len(res) == 0:
+        new_set = set([query, subject])
+        families.append(new_set)
+    elif len(res) == 1:
+        res[0].add(query)
+        res[0].add(subject)
+    else:
+        for r in res:
+            try:
+                families.remove(r)
+            except ValueError:
+                print ">>",families
+                print "-->",res
+                print "->",r
+                exit()
+        new_set = set(chain.from_iterable(res))
+        families.append(new_set)
+
 print ""
 makelog("Found %i inverted repeats in" % (count - 1,))
 makelog(cur_time())
