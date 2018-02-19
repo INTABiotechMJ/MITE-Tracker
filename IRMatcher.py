@@ -448,7 +448,7 @@ for _, row in df.iterrows():
         ir_seq_rec = SeqRecord(Seq(row.seq), id=row.id, description = description)
         family_seqs.append(ir_seq_rec)
 
-    write_row = '\t'.join([ row.record, 'miteParser','mite',str(row.start), str(row.end),'.','+','.','ID='+name+';FAMILY='+str(row.family) ])
+    write_row = '\t'.join([ row.record, 'miteParser','mite',str(row.start), str(row.end),'.','+','.','ID='+name+';FAMILY='+str(int(row.family)) ])
     output_gff.write(write_row + '\n')
     count_real += 1
 
