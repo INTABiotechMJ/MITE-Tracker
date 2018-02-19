@@ -28,12 +28,13 @@ parser = argparse.ArgumentParser()#pylint: disable=invalid-name
 parser.add_argument("-g", "--genome", help="Genome file in fasta format", required=True)
 parser.add_argument("-j","--jobname", help="Will create files under a folder called [jobname]", required=True)
 parser.add_argument("-w","--workers", help="Max number of processes to use simultaneously", type=int, default=1)
-parser.add_argument("--max_sep_len", help="IR max separation lenght", type=int, default=650)
-parser.add_argument("--min_total_len", help="Min total lenght", type=int, default=50)
+parser.add_argument("--max_sep_len", help="IR max separation lenght", type=int, default=800)
+parser.add_argument("--min_total_len", help="Min total lenght", type=int, default=100)
 parser.add_argument("--align_min_len", help="TIR minimun aligmnent length", type=int, default=10)
 parser.add_argument("--tsd_min_len", help="TSD min lenght", type=int, default=2)
 parser.add_argument("--tsd_max_len", help="TSD max lenght", type=int, default=10)
 parser.add_argument("--flanking_seq_len", help="Flanking seq length for comparison", type=int, default=50)
+parser.add_argument("--min_copy_number", help="Minimum CN for families", type=int, default=3)
 
 args = parser.parse_args()#pylint: disable=invalid-name
 
@@ -56,6 +57,7 @@ align_min_len = args.align_min_len
 MIN_TSD_LEN = args.tsd_min_len
 MAX_TSD_LEN = args.tsd_max_len
 FLANKING_SEQ_LEN = args.flanking_seq_len
+MIN_COPY_NUMBER = args.min_copy_number
 
 def _findIR(q):
     global total_queue_count
@@ -64,12 +66,15 @@ def _findIR(q):
     global flanking_seqs
     while True:
         try:
-            seq, split_index, record_id,seq_len = q.get(timeout=5)
+            seq, seq_fs, split_index, record_id,seq_len = q.get(timeout=5)
         except Queue.Empty:
             break
         splited_len = len(seq)
         seq_rc = str(Seq(seq).reverse_complement())
         complexity = lcc_simp(seq)
+        if complexity < 1:
+            q.task_done()
+            continue
         record_q = SeqRecord(Seq(seq), id = record_id)
         record_s = SeqRecord(Seq(seq_rc), id = record_id + "_rc")
         query_filename = "tmp/query" + str(record_id + "_" + str(split_index))+".tmp"
@@ -93,10 +98,12 @@ def _findIR(q):
         p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
         out,err = p.communicate()
         if err:
-            q.task_done
+            import ipdb; ipdb.set_trace()
+            print(split_index, record_id,seq_len)
             makelog("BLASTN error: %s" % (err, ) )
-        os.remove(query_filename)
-        os.remove(subject_filename)
+        else:
+            os.remove(query_filename)
+            os.remove(subject_filename)
         lines = out.splitlines()
         for row in lines:
             row = row.split()
@@ -167,8 +174,8 @@ def _findIR(q):
             ir_seq = seq[mite_pos_one:mite_pos_two]
             ir_len = mite_pos_two - mite_pos_one
 
-            flanking_seq_left = seq[mite_pos_one - FLANKING_SEQ_LEN:mite_pos_one]
-            flanking_seq_right = seq[mite_pos_two:mite_pos_two + FLANKING_SEQ_LEN]
+            flanking_seq_left = seq_fs[mite_pos_one:mite_pos_one + FLANKING_SEQ_LEN]
+            flanking_seq_right = seq_fs[mite_pos_two+FLANKING_SEQ_LEN:mite_pos_two + FLANKING_SEQ_LEN + FLANKING_SEQ_LEN]
 
             #calculate positions in full sequence
             mite_start_full = mite_pos_one + split_index
@@ -197,7 +204,7 @@ for i in range(args.workers):
     worker = Thread(target=_findIR, args=(q,))
     worker.setDaemon(True)
     worker.start()
-windows_size = 20000 #int(ceil(max_sep_len * 30))
+windows_size = 25000 #int(ceil(max_sep_len * 30))
 
 #processes until certain amount of sequences
 #stablish a balance between memory usage and processing
@@ -216,15 +223,16 @@ for record in fasta_seq:
     queue_count = 1
     record_count += 1
     porc_ant = 0
-    split_index = MAX_TSD_LEN
+    split_index = MAX_TSD_LEN + FLANKING_SEQ_LEN
     clean_seq = ''.join(str(record.seq).splitlines())
     seq_len = len(clean_seq)
     params = (record.id, seq_len, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
     print ""
     makelog("Adding %s (len %i) %i/%i (%i%% of total sequences in %s)" % params)
-    while split_index < seq_len - MIN_TSD_LEN:
+    while split_index < seq_len - MIN_TSD_LEN - FLANKING_SEQ_LEN:
         seq = clean_seq[split_index:split_index + windows_size]
-        q.put((seq, split_index,record.id,seq_len,))
+        seq_fs = clean_seq[split_index-FLANKING_SEQ_LEN :split_index + windows_size + FLANKING_SEQ_LEN]
+        q.put((seq, seq_fs, split_index,record.id,seq_len,))
         queue_count += 1
         total_queue_count += 1
         split_index += windows_size - max_sep_len
@@ -268,7 +276,7 @@ irs_seqs = []
 df = df.sort_values(by=['record','start','end'])
 count = 1
 for _, row in df.iterrows():
-    name = 'IR_' + str(count)
+    name = 'MITE_CAND_' + str(count)
     #append sequence record for biopython
     params = (row.record, row.start, row.end, row.tsd, row.tsd_in, row.len, row.ir_1, row.ir_2)
     description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i IR_1:%s IR_2:%s " % (params)
@@ -333,13 +341,12 @@ for row in lines:
         new_set = set(chain.from_iterable(res))
         families.append(new_set)
 
-
 #group flanking sequences
 cmd_list = [
 'blastn',
 '-query',flanking_seqs_name,
 '-subject',flanking_seqs_name,
-'-evalue','1e3',
+'-evalue','10',
 '-outfmt',"6"]
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
 out,err = p.communicate()
@@ -377,6 +384,12 @@ for row in lines:
         new_set = set(chain.from_iterable(res))
         fs_families.append(new_set)
 
+#remove families with low CN
+for family in families:
+    if len(family) < MIN_COPY_NUMBER:
+        families.remove(family)
+
+#shared elements are in the same family and have the same flanking sequence
 shared = set()
 for family in families:
         for fs_family in fs_families:
@@ -384,16 +397,19 @@ for family in families:
 
 #save definitive elements
 families = list(families)
-
 irs_seqs = []
+done_families = []
+family_seqs = []
+current_family = None
 df = df.sort_values(by=['record','start','end'])
 count = 1
 count_real = 1
 output_gff = open("results/" + args.jobname + "/mites.gff3","w") 
 output_gff.write("##gff-version 3\n")
 
-for _, row in df.iterrows():
-    if "IR_" + str(count) in shared:
+
+for index, row in df.iterrows():
+    if "MITE_CAND_" + str(count) in shared:
         count += 1
         continue
     count += 1
@@ -402,26 +418,56 @@ for _, row in df.iterrows():
     family_number = 0
     for family in families:
         idx += 1
-        if "IR_" + str(count) in family:
+        if "MITE_CAND_" + str(count) in family:
             family_number = idx
+            break
 
+    #are not in any family
     if family_number == 0:
         continue
+    df.loc(index,'family') = family_number
+
+for _, row in df.iterrows():
+    if "MITE_CAND_" + str(count) in shared:
+        count += 1
+        continue
+    count += 1
     
-    name = 'IR_' + str(count_real)
+    idx = 0
+    family_number = 0
+    for family in families:
+        idx += 1
+        if "MITE_CAND_" + str(count) in family:
+            family_number = idx
+            current_family = family
+            break
+
+    #are not in any family
+    if family_number == 0:
+        continue
+
+    name = 'MITE_' + str(count_real)
     #append sequence record for biopython
     params = (row.record, row.start, row.end, family_number , row.tsd, row.tsd_in, row.len, row.ir_1, row.ir_2)
     description = "SEQ:%s START:%i END:%i FAMILY:%s TSD:%s TSD_IN:%s MITE_LEN:%i IR_1:%s IR_2:%s " % (params)
     ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
     irs_seqs.append(ir_seq_rec)
+
+    if not family_number in done_families:
+        done_families.append(family_number)
+        params = (",".join(current_family), )
+        description += "ELEMENTS_IN_FAMILY: %s" % (params)
+        ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
+        family_seqs.append(ir_seq_rec)
     
     write_row = '\t'.join([ row.record, 'miteParser','mite',str(row.start), str(row.end),'.','+','.','ID='+name ])
     output_gff.write(write_row + '\n')
     count_real += 1
 
 makelog("Writing definitive sequences")
-SeqIO.write(irs_seqs, "results/" + args.jobname + "/mites.fasta" , "fasta")
+SeqIO.write(irs_seqs, "results/" + args.jobname + "/mites.all.fasta" , "fasta")
+SeqIO.write(family_seqs, "results/" + args.jobname + "/mites.nr.fasta" , "fasta")
 
 makelog("Discarded %i by flanking sequence and inner similarity" % (count - count_real))
-makelog("Found %i MITEs in" % (count_real - 1,))
+makelog("Found %i and %i families MITEs in" % (count_real - 1,len(families),))
 makelog(cur_time())
