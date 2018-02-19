@@ -98,7 +98,6 @@ def _findIR(q):
         p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
         out,err = p.communicate()
         if err:
-            import ipdb; ipdb.set_trace()
             print(split_index, record_id,seq_len)
             makelog("BLASTN error: %s" % (err, ) )
         else:
@@ -317,7 +316,10 @@ for row in lines:
     row = row.split()
     query = row[0]
     subject = row[1]
+    identity = row[2]
     if query == subject:
+        continue
+    if float(identity < 95):
         continue
     res = []
     for family in families:
@@ -384,16 +386,18 @@ for row in lines:
         new_set = set(chain.from_iterable(res))
         fs_families.append(new_set)
 
-#remove families with low CN
-for family in families:
-    if len(family) < MIN_COPY_NUMBER:
-        families.remove(family)
 
 #shared elements are in the same family and have the same flanking sequence
 shared = set()
 for family in families:
         for fs_family in fs_families:
             shared = shared | family.intersection(fs_family)
+
+#remove families with low CN
+for family in families[:]:
+    family -= shared
+    if len(family) < MIN_COPY_NUMBER:
+        families.remove(family)
 
 #save definitive elements
 families = list(families)
@@ -406,7 +410,6 @@ count = 1
 count_real = 1
 output_gff = open("results/" + args.jobname + "/mites.gff3","w") 
 output_gff.write("##gff-version 3\n")
-
 
 for index, row in df.iterrows():
     if "MITE_CAND_" + str(count) in shared:
@@ -425,42 +428,27 @@ for index, row in df.iterrows():
     #are not in any family
     if family_number == 0:
         continue
-    df.loc(index,'family') = family_number
+    df.loc[index,'family'] = int(family_number)
+    df.loc[index,'id'] = "MITE_" + str(count_real)
+    count_real += 1
 
 for _, row in df.iterrows():
-    if "MITE_CAND_" + str(count) in shared:
-        count += 1
+    if str(row.family) == 'nan':
         continue
-    count += 1
-    
-    idx = 0
-    family_number = 0
-    for family in families:
-        idx += 1
-        if "MITE_CAND_" + str(count) in family:
-            family_number = idx
-            current_family = family
-            break
-
-    #are not in any family
-    if family_number == 0:
-        continue
-
-    name = 'MITE_' + str(count_real)
     #append sequence record for biopython
-    params = (row.record, row.start, row.end, family_number , row.tsd, row.tsd_in, row.len, row.ir_1, row.ir_2)
+    params = (row.record, row.start, row.end, int(row.family) , row.tsd, row.tsd_in, row.len, row.ir_1, row.ir_2)
     description = "SEQ:%s START:%i END:%i FAMILY:%s TSD:%s TSD_IN:%s MITE_LEN:%i IR_1:%s IR_2:%s " % (params)
-    ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
+    ir_seq_rec = SeqRecord(Seq(row.seq), id=row.id, description = description)
     irs_seqs.append(ir_seq_rec)
 
-    if not family_number in done_families:
-        done_families.append(family_number)
-        params = (",".join(current_family), )
+    if not row.family in done_families:
+        done_families.append(row.family)
+        params = (','.join(df[df.family == row.family].id))
         description += "ELEMENTS_IN_FAMILY: %s" % (params)
-        ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
+        ir_seq_rec = SeqRecord(Seq(row.seq), id=row.id, description = description)
         family_seqs.append(ir_seq_rec)
-    
-    write_row = '\t'.join([ row.record, 'miteParser','mite',str(row.start), str(row.end),'.','+','.','ID='+name ])
+
+    write_row = '\t'.join([ row.record, 'miteParser','mite',str(row.start), str(row.end),'.','+','.','ID='+name+';FAMILY='+str(row.family) ])
     output_gff.write(write_row + '\n')
     count_real += 1
 
@@ -469,5 +457,5 @@ SeqIO.write(irs_seqs, "results/" + args.jobname + "/mites.all.fasta" , "fasta")
 SeqIO.write(family_seqs, "results/" + args.jobname + "/mites.nr.fasta" , "fasta")
 
 makelog("Discarded %i by flanking sequence and inner similarity" % (count - count_real))
-makelog("Found %i and %i families MITEs in" % (count_real - 1,len(families),))
+makelog("Found %i MITES and %i families MITEs in" % (count_real - 1,len(families),))
 makelog(cur_time())
