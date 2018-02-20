@@ -2,6 +2,7 @@
 from Bio import SeqIO
 from Bio.SeqUtils.lcc import lcc_simp
 from Bio.SeqRecord import SeqRecord
+from itertools import chain
 from Bio.Seq import Seq
 from subprocess import Popen, PIPE
 import os
@@ -33,7 +34,7 @@ parser.add_argument("--min_total_len", help="Min total lenght", type=int, defaul
 parser.add_argument("--align_min_len", help="TIR minimun aligmnent length", type=int, default=10)
 parser.add_argument("--tsd_min_len", help="TSD min lenght", type=int, default=2)
 parser.add_argument("--tsd_max_len", help="TSD max lenght", type=int, default=10)
-parser.add_argument("--flanking_seq_len", help="Flanking seq length for comparison", type=int, default=50)
+parser.add_argument("--FSL", help="Flanking seq length for comparison", type=int, default=50)
 parser.add_argument("--min_copy_number", help="Minimum CN for families", type=int, default=3)
 
 args = parser.parse_args()#pylint: disable=invalid-name
@@ -56,7 +57,7 @@ min_total_len = args.min_total_len
 align_min_len = args.align_min_len
 MIN_TSD_LEN = args.tsd_min_len
 MAX_TSD_LEN = args.tsd_max_len
-FLANKING_SEQ_LEN = args.flanking_seq_len
+FSL = args.FSL
 MIN_COPY_NUMBER = args.min_copy_number
 
 def _findIR(q):
@@ -143,8 +144,8 @@ def _findIR(q):
             i = MAX_TSD_LEN
             valid_tsd = False
             while i >= MIN_TSD_LEN:
-                tsd_one = seq[ir_start - i:ir_start]
-                tsd_two = seq[ir_end:ir_end + i]
+                tsd_one = seq_fs[ir_start - i + FSL:ir_start + FSL]
+                tsd_two = seq_fs[ir_end + FSL:ir_end + i + FSL]
                 if tsd_one.lower() == tsd_two.lower():
                     valid_tsd = True
                     mite_pos_one = ir_start - i
@@ -157,8 +158,8 @@ def _findIR(q):
             if not valid_tsd:
                 i = MAX_TSD_LEN
                 while i >= MIN_TSD_LEN:
-                    tsd_one = seq[ir_start:ir_start+i]
-                    tsd_two = seq[ir_end-i:ir_end]
+                    tsd_one = seq_fs[ir_start + FSL:ir_start + i + FSL]
+                    tsd_two = seq_fs[ir_end - i + FSL:ir_end + FSL]
                     if tsd_one.lower() == tsd_two.lower():
                         valid_tsd = True
                         mite_pos_one = ir_start
@@ -173,9 +174,9 @@ def _findIR(q):
             ir_seq = seq[mite_pos_one:mite_pos_two]
             ir_len = mite_pos_two - mite_pos_one
 
-            flanking_seq_left = seq_fs[mite_pos_one:mite_pos_one + FLANKING_SEQ_LEN]
-            flanking_seq_right = seq_fs[mite_pos_two+FLANKING_SEQ_LEN:mite_pos_two + FLANKING_SEQ_LEN + FLANKING_SEQ_LEN]
-
+            flanking_seq_left = seq_fs[mite_pos_one:mite_pos_one + FSL]
+            flanking_seq_right = seq_fs[mite_pos_two+FSL:mite_pos_two + FSL + FSL]
+           
             #calculate positions in full sequence
             mite_start_full = mite_pos_one + split_index
             mite_end_full = mite_pos_two + split_index 
@@ -222,15 +223,15 @@ for record in fasta_seq:
     queue_count = 1
     record_count += 1
     porc_ant = 0
-    split_index = MAX_TSD_LEN + FLANKING_SEQ_LEN
+    split_index = MAX_TSD_LEN + FSL
     clean_seq = ''.join(str(record.seq).splitlines())
     seq_len = len(clean_seq)
     params = (record.id, seq_len, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
     print ""
     makelog("Adding %s (len %i) %i/%i (%i%% of total sequences in %s)" % params)
-    while split_index < seq_len - MIN_TSD_LEN - FLANKING_SEQ_LEN:
+    while split_index < seq_len - MIN_TSD_LEN - FSL:
         seq = clean_seq[split_index:split_index + windows_size]
-        seq_fs = clean_seq[split_index-FLANKING_SEQ_LEN :split_index + windows_size + FLANKING_SEQ_LEN]
+        seq_fs = clean_seq[split_index-FSL :split_index + windows_size + FSL]
         q.put((seq, seq_fs, split_index,record.id,seq_len,))
         queue_count += 1
         total_queue_count += 1
@@ -310,18 +311,20 @@ if err:
     q.task_done
     makelog("BLASTN error: %s" % (err, ) )
 lines = out.splitlines()
-from itertools import chain
+
 families = []
 for row in lines:
     row = row.split()
     query = row[0]
     subject = row[1]
     identity = row[2]
+    length = row[3]
     if query == subject:
         continue
-    if float(identity < 95):
+    if float(identity < 80):
         continue
-    print row
+    if float(length < 80):
+        continue
     res = []
     for family in families:
         if query in family or subject in family:
@@ -357,8 +360,8 @@ if err:
     q.task_done
     makelog("BLASTN error: %s" % (err, ) )
 lines = out.splitlines()
-from itertools import chain
 fs_families = []
+
 for row in lines:
     row = row.split()
     query = row[0]
