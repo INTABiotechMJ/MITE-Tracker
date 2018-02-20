@@ -15,8 +15,9 @@ from threading import Thread, Lock, active_count
 import Queue
 import logging
 
-def makelog(stri):
-    print(stri)
+def makelog(stri, do_print=True):
+    if do_print:
+        print(stri)
     logging.debug(stri)
 
 def cur_time():
@@ -181,7 +182,7 @@ def _findIR(q):
             mite_start_full = mite_pos_one + split_index
             mite_end_full = mite_pos_two + split_index 
 
-            new_element = (mite_start_full, mite_end_full, ir_seq, record.id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in,flanking_seq_left,flanking_seq_right)
+            new_element = (mite_start_full, mite_end_full, ir_seq, record.id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in,flanking_seq_left,flanking_seq_right,length)
             with l_lock:
                 irs.append(new_element)
         q.task_done()
@@ -250,18 +251,20 @@ q.join()
 
 makelog("Creating candidates fasta")
 
-labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right']
+labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length']
 df = pd.DataFrame.from_records(irs, columns=labels)
 
+makelog("Canidadates: " + str(len(df)))
 #filter out nested (keep larger)
 l=[]
 for idx, row in df.iterrows():
     #filter all that are nested into this
-    res = df[(df.record == row.record) & (df.start >= row.start) & (df.end <= row.end) & (df.index != idx) ]
+    res = df[(df.record == row.record) & (df.start >= row.start + row.ir_length) & (df.end <= row.end - row.ir_length) & (df.index != idx) ]
+    #res = df[(df.record == row.record) & (df.start >= row.start) & (df.end <= row.end ) & (df.index != idx) ]
     l.append(res)
 res = pd.concat(l)
 df.drop(res.index,inplace=True)
-
+makelog("Canidadates (not nested): " + str(len(df)))
 #remove all nested
 #print len(df)
 #df1 = df.reset_index()
@@ -298,12 +301,23 @@ SeqIO.write(irs_seqs, candidates_fasta , "fasta")
 flanking_seqs_name = "results/" + args.jobname + "/flanking_seqs.candidates.fasta"
 SeqIO.write(fs_seqs, flanking_seqs_name , "fasta")
 
+makelog("Group elements")
+
+
 #group elements
+cmd_list = [
+'makeblastdb',
+'-in',candidates_fasta,
+'-out',candidates_fasta,
+'-dbtype','nucl']
+p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
+out,err = p.communicate()
+
 cmd_list = [
 'blastn',
 '-query',candidates_fasta,
-'-subject',candidates_fasta,
-'-evalue','1e3',
+'-db',candidates_fasta,
+'-evalue','1e10',
 '-outfmt',"6"]
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
 out,err = p.communicate()
@@ -348,10 +362,20 @@ for row in lines:
         families.append(new_set)
 
 #group flanking sequences
+makelog("Group flanking sequence")
+
+cmd_list = [
+'makeblastdb',
+'-in',flanking_seqs_name,
+'-out',flanking_seqs_name,
+'-dbtype','nucl']
+p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
+out,err = p.communicate()
+
 cmd_list = [
 'blastn',
 '-query',flanking_seqs_name,
-'-subject',flanking_seqs_name,
+'-db',flanking_seqs_name,
 '-evalue','10',
 '-outfmt',"6"]
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
@@ -403,6 +427,7 @@ for family in families[:]:
     if len(family) < MIN_COPY_NUMBER:
         families.remove(family)
 
+makelog("Saving results")
 #save definitive elements
 families = list(families)
 irs_seqs = []
@@ -414,10 +439,12 @@ count = 1
 count_real = 1
 output_gff = open("results/" + args.jobname + "/mites.gff3","w") 
 output_gff.write("##gff-version 3\n")
-
+no_family, flank_seq_sim = 0, 0
 for index, row in df.iterrows():
     if "MITE_CAND_" + str(count) in shared:
         count += 1
+        flank_seq_sim += 1
+        makelog("MITE_CAND_" + str(count) + " discarded because flanking sequence and inner sequence similarity", False)
         continue
     count += 1
     
@@ -431,6 +458,8 @@ for index, row in df.iterrows():
 
     #are not in any family
     if family_number == 0:
+        no_family += 1
+        makelog("MITE_CAND_" + str(count) + " discarded because is not in any family", False)
         continue
     df.loc[index,'family'] = int(family_number)
     df.loc[index,'id'] = "MITE_" + str(count_real)
@@ -460,6 +489,7 @@ makelog("Writing definitive sequences")
 SeqIO.write(irs_seqs, "results/" + args.jobname + "/mites.all.fasta" , "fasta")
 SeqIO.write(family_seqs, "results/" + args.jobname + "/mites.nr.fasta" , "fasta")
 
-makelog("Discarded %i by flanking sequence and inner similarity" % (count - count_real))
 makelog("Found %i MITES and %i families MITEs in" % (count_real - 1,len(families),))
+makelog("Discarded %i because they're in no family" % (no_family,) )
+makelog("Discarded %i because flanking sequence similarity" % (flank_seq_sim,) )
 makelog(cur_time())

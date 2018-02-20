@@ -1,0 +1,10 @@
+class Mite():
+    name = ""
+    alt_name = ""
+    seq = ""
+    reference_id = ""
+    start = ""
+    end = ""
+    ir_1 = ""
+    ir_2 = ""
+    ir_length = ""
