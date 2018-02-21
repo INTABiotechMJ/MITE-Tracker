@@ -88,9 +88,9 @@ def _findIR(q):
         '-query',query_filename,
         '-subject',subject_filename,
         '-reward','2',
-        '-max_target_seqs','1',
+        #'-max_target_seqs','1',
         '-penalty','-4',
-        '-word_size','8',
+        '-word_size','7',
         #'-ungapped',
         '-evalue','145',
         '-strand',"plus",
@@ -303,20 +303,10 @@ SeqIO.write(fs_seqs, flanking_seqs_name , "fasta")
 
 makelog("Group elements")
 
-
-#group elements
-cmd_list = [
-'makeblastdb',
-'-in',candidates_fasta,
-'-out',candidates_fasta,
-'-dbtype','nucl']
-p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
-out,err = p.communicate()
-
 cmd_list = [
 'blastn',
 '-query',candidates_fasta,
-'-db',candidates_fasta,
+'-subject',candidates_fasta,
 '-evalue','1e10',
 '-outfmt',"6"]
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
@@ -365,17 +355,9 @@ for row in lines:
 makelog("Group flanking sequence")
 
 cmd_list = [
-'makeblastdb',
-'-in',flanking_seqs_name,
-'-out',flanking_seqs_name,
-'-dbtype','nucl']
-p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
-out,err = p.communicate()
-
-cmd_list = [
 'blastn',
 '-query',flanking_seqs_name,
-'-db',flanking_seqs_name,
+'-subject',flanking_seqs_name,
 '-evalue','10',
 '-outfmt',"6"]
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
@@ -415,11 +397,12 @@ for row in lines:
         fs_families.append(new_set)
 
 
+makelog("Merging results")
 #shared elements are in the same family and have the same flanking sequence
 shared = set()
 for family in families:
-        for fs_family in fs_families:
-            shared = shared | family.intersection(fs_family)
+    for fs_family in fs_families:
+        shared = shared | family.intersection(fs_family)
 
 #remove families with low CN
 for family in families[:]:
