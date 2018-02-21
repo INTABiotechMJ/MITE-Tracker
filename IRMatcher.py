@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser()#pylint: disable=invalid-name
 parser.add_argument("-g", "--genome", help="Genome file in fasta format", required=True)
 parser.add_argument("-j","--jobname", help="Will create files under a folder called [jobname]", required=True)
 parser.add_argument("-w","--workers", help="Max number of processes to use simultaneously", type=int, default=1)
-parser.add_argument("--max_sep_len", help="IR max separation lenght", type=int, default=800)
+parser.add_argument("--mite_max_len", help="MITE max lenght", type=int, default=800)
 parser.add_argument("--min_total_len", help="Min total lenght", type=int, default=100)
 parser.add_argument("--align_min_len", help="TIR minimun aligmnent length", type=int, default=10)
 parser.add_argument("--tsd_min_len", help="TSD min lenght", type=int, default=2)
@@ -53,17 +53,20 @@ logging.basicConfig(
     logging.StreamHandler()],
     format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
 
-max_sep_len = args.max_sep_len
+MITE_MAX_LEN = args.mite_max_len
 align_min_len = args.align_min_len
 MIN_TSD_LEN = args.tsd_min_len
 MAX_TSD_LEN = args.tsd_max_len
+MITE_MIN_LEN = args.min_total_len
 FSL = args.FSL
 MIN_COPY_NUMBER = args.min_copy_number
 
 def _findIR(q):
     global total_queue_count
     global intersecter
+    global perc_seq
     global irs
+    global last_perc_seq
     global flanking_seqs
     while True:
         try:
@@ -89,9 +92,9 @@ def _findIR(q):
         '-reward','2',
         #'-max_target_seqs','1',
         '-penalty','-4',
-        '-word_size','6',
+        '-word_size','7',
         #'-ungapped',
-        '-evalue','150',
+        #'-evalue','140',
         '-strand','plus',
         #'-soft_masking','false',
         #'-dust','no',
@@ -128,9 +131,12 @@ def _findIR(q):
             #organice positions
             ir_start = min(qstart,qend,sstart,send)
             ir_end = max(qstart,qend,sstart,send)
+            #calculate length
             ir_len = ir_end - ir_start
             #length constraints
-            if ir_len > max_sep_len:
+            if ir_len > MITE_MAX_LEN:
+                continue
+            if ir_len < MITE_MIN_LEN:
                 continue
             #move in genome, split index
             #ir_seq = seq[ir_start:ir_end]
@@ -183,6 +189,20 @@ def _findIR(q):
             new_element = (mite_start_full, mite_end_full, ir_seq, record.id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in,flanking_seq_left,flanking_seq_right,length)
             with l_lock:
                 irs.append(new_element)
+                
+            curr_perc = split_index * 100 / seq_len
+
+            if not record_id in perc_seq or not record_id in last_perc_seq:
+                perc_seq[record_id] = curr_perc
+                last_perc_seq[record_id] = curr_perc
+                print record_id, str(curr_perc) + "%"
+
+            if perc_seq[record_id] - last_perc_seq[record_id] >= 5:
+                print record_id, str(curr_perc) + "%"
+                last_perc_seq[record_id] = curr_perc
+
+            perc_seq[record_id] = curr_perc
+
         q.task_done()
 
 start_time = time.time()
@@ -203,13 +223,16 @@ for i in range(args.workers):
     worker = Thread(target=_findIR, args=(q,))
     worker.setDaemon(True)
     worker.start()
-windows_size = 25000 #int(ceil(max_sep_len * 30))
+windows_size = int(ceil(MITE_MAX_LEN * 2))
+#windows_size = 5000 #int(ceil(MITE_MAX_LEN * 30))
 
 #processes until certain amount of sequences
 #stablish a balance between memory usage and processing
 max_queue_size = 50
 current_processing_size = 0
 #initialize global variables
+perc_seq = {}
+last_perc_seq = {}
 irs = []
 flanking_seqs = []
 l_lock = Lock()
@@ -228,13 +251,13 @@ for record in fasta_seq:
     params = (record.id, seq_len, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
     print ""
     makelog("Adding %s (len %i) %i/%i (%i%% of total sequences in %s)" % params)
-    while split_index < seq_len - MIN_TSD_LEN - FSL:
+    while split_index < seq_len - MAX_TSD_LEN - FSL:
         seq = clean_seq[split_index:split_index + windows_size]
         seq_fs = clean_seq[split_index-FSL :split_index + windows_size + FSL]
         q.put((seq, seq_fs, split_index,record.id,seq_len,))
         queue_count += 1
         total_queue_count += 1
-        split_index += windows_size - max_sep_len
+        split_index += windows_size - MITE_MAX_LEN
         current_processing_size += windows_size
         if q.qsize() >= max_queue_size:
             current_processing_size = 0
@@ -247,12 +270,13 @@ for record in fasta_seq:
 #In case of unprocessed sequences are left, let's wait
 q.join()
 
-makelog("Creating candidates fasta")
+makelog("Searh for nested elements")
 
 labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length']
 df = pd.DataFrame.from_records(irs, columns=labels)
 
-makelog("Canidadates: " + str(len(df)))
+makelog("Candidates: " + str(len(df)))
+makelog(cur_time())
 #filter out nested (keep larger)
 l=[]
 for idx, row in df.iterrows():
@@ -262,7 +286,7 @@ for idx, row in df.iterrows():
     l.append(res)
 res = pd.concat(l)
 df.drop(res.index,inplace=True)
-makelog("Canidadates (not nested): " + str(len(df)))
+makelog("Candidates (not nested): " + str(len(df)))
 #remove all nested
 #print len(df)
 #df1 = df.reset_index()
