@@ -54,7 +54,6 @@ logging.basicConfig(
     format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
 
 max_sep_len = args.max_sep_len
-min_total_len = args.min_total_len
 align_min_len = args.align_min_len
 MIN_TSD_LEN = args.tsd_min_len
 MAX_TSD_LEN = args.tsd_max_len
@@ -90,13 +89,13 @@ def _findIR(q):
         '-reward','2',
         #'-max_target_seqs','1',
         '-penalty','-4',
-        '-word_size','7',
+        '-word_size','6',
         #'-ungapped',
-        '-evalue','145',
-        '-strand',"plus",
-        #'-soft_masking','false' ,'-dust','no',
+        '-evalue','150',
+        '-strand','plus',
+        #'-soft_masking','false',
+        #'-dust','no',
         '-outfmt',"6 sstart send qstart qend score length mismatch gaps gapopen nident"]
-        cmd = ' '.join(cmd_list)
         p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
         out,err = p.communicate()
         if err:
@@ -116,6 +115,7 @@ def _findIR(q):
             length = int(row[5])
             mismatch = int(row[6])
             gaps = int(row[7])
+
             #filter valids IR
             if length < align_min_len:
                 continue
@@ -131,8 +131,6 @@ def _findIR(q):
             ir_len = ir_end - ir_start
             #length constraints
             if ir_len > max_sep_len:
-                continue
-            if ir_len < min_total_len:
                 continue
             #move in genome, split index
             #ir_seq = seq[ir_start:ir_end]
