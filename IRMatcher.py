@@ -188,8 +188,8 @@ def _findIR(q):
 
             new_element = (mite_start_full, mite_end_full, ir_seq, record.id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in,flanking_seq_left,flanking_seq_right,length)
             with l_lock:
-                irs.append(new_element)
-                
+                irs[record.id + "_" + str(mite_start_full) + "_" + str(mite_end_full)] = new_element
+
             curr_perc = split_index * 100 / seq_len
 
             if not record_id in perc_seq or not record_id in last_perc_seq:
@@ -223,7 +223,7 @@ for i in range(args.workers):
     worker = Thread(target=_findIR, args=(q,))
     worker.setDaemon(True)
     worker.start()
-windows_size = int(ceil(MITE_MAX_LEN * 2))
+windows_size = MITE_MAX_LEN * 2
 #windows_size = 5000 #int(ceil(MITE_MAX_LEN * 30))
 
 #processes until certain amount of sequences
@@ -233,7 +233,7 @@ current_processing_size = 0
 #initialize global variables
 perc_seq = {}
 last_perc_seq = {}
-irs = []
+irs = {}
 flanking_seqs = []
 l_lock = Lock()
 #start adding sequences to process queue
@@ -253,12 +253,12 @@ for record in fasta_seq:
     makelog("Adding %s (len %i) %i/%i (%i%% of total sequences in %s)" % params)
     while split_index < seq_len - MAX_TSD_LEN - FSL:
         seq = clean_seq[split_index:split_index + windows_size]
-        seq_fs = clean_seq[split_index-FSL :split_index + windows_size + FSL]
+        seq_fs = clean_seq[split_index - FSL :split_index + windows_size + FSL]
         q.put((seq, seq_fs, split_index,record.id,seq_len,))
         queue_count += 1
         total_queue_count += 1
-        split_index += windows_size - MITE_MAX_LEN
-        current_processing_size += windows_size
+        split_index += MITE_MAX_LEN
+        current_processing_size += MITE_MAX_LEN
         if q.qsize() >= max_queue_size:
             current_processing_size = 0
             q.join()
@@ -273,8 +273,7 @@ q.join()
 makelog("Searh for nested elements")
 
 labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length']
-df = pd.DataFrame.from_records(irs, columns=labels)
-
+df = pd.DataFrame.from_records(irs.values(), columns=labels)
 makelog("Candidates: " + str(len(df)))
 makelog(cur_time())
 #filter out nested (keep larger)
@@ -307,7 +306,8 @@ for _, row in df.iterrows():
     description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i IR_1:%s IR_2:%s " % (params)
     ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
     irs_seqs.append(ir_seq_rec)
-
+    if row.seq == "":
+        print row
     #flanking sequences
     fs_seq_rec = SeqRecord(Seq(row.fs_left), id=name + "L", description = "_") 
     fs_seqs.append(fs_seq_rec)
