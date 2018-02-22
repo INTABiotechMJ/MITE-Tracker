@@ -176,7 +176,7 @@ cmd_list = [
 ]
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
 for c in iter(lambda: p.stdout.read(), ''):
-    print c
+    makelog(c)
 #out,err = p.communicate()
 makelog("Clustering done")
 clusters_dic = cdhitutils.loadcluster(cluster_file + ".clstr")
