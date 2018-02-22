@@ -1,52 +1,63 @@
 ## About
 
-IRmatcher is efficient and easy to run tool for discovering inverted repeats in genomics sequences. It is written in python and uses ncbi's blast+ for matching sequences. 
+IRmatcher is efficient and easy to run tool for discovering Miniature Inverted repeats Transposable Elements (MITE) in genomic sequences. It is written in python and uses ncbi's blast+ for finding inverted repeats.
+Depends on cdhit to do the clustering.
 
 ## Requirements (just follow how to install)
- - tested in macOS 10.13.1, Debian 7.6, Ubuntu 16.04
+ - tested in macOS 10.13.1, Debian 7.6, Ubuntu 16.04, Windows 7
  - ncbi blast+ (Nucleotide-Nucleotide BLAST 2.6.0+)
- - biopython
+ - python requirements are in requirements.txt file (bipython and pandas)
 
-## How to install
+## How to install linux or windows
 ```
-sudo apt-get install ncbi-blast+ virtualenv 
-#for macOS user 
-#brew install ncbi-blast+ virtualenv
+git clone https://github.com/weizhongli/cdhit.git
+cd cdhit/
+make
+sudo apt-get install ncbi-blast+ virtualenv
+```
+
+## How to install macOS (OSx)
+```
+brew install ncbi-blast+ virtualenv
+git clone https://github.com/weizhongli/cdhit.git
+cd cdhit/
+make openmp=no
+#as stated in https://entropicevolution.wordpress.com/2015/09/19/compiling-cd-hit-under-mac-osx-yosemite/
+```
+
+```
+pip install -r requirements.txt
+python miteParser.py -g genome.fasta -j jobname
+#or if you want to use virtualenv (recommended)
 virtualenv venv
 source venv/bin/activate
-pip install -r requirementes.txt
-```
-in MAC if error 
-
-```
-lzomodule.c:35:10: fatal error: 'lzo1x.h' file not found
-```
-shows up:
-
-```
-export C_INCLUDE_PATH=$(brew --cellar lzo)/2.09/include/lzo:$(brew --cellar lzo)/2.09/include/
-export LIBRARY_PATH=/usr/local/lib
-pip install python-lzo
+pip install -r requirements.txt
 ```
 
-## How to run
+# How to run
+
 ```
 python miteParser.py -g /path/to/your/genome.fasta -j jobname
 ```
-Or specify -w if you're lucky and have 3 free CPUs
+
+Or specify -w for specify the number of threads to use
 ```
 python miteParser.py -g /path/to/your/genome.fasta -w 3 -j jobname
 ```
 
-## How to run and leave running in background with nohup
+To run in background
 ```
 nohup python -u miteParser.py -g /path/to/your/genome.fasta -w 3 -j jobname &
 ```
 
-In order to check the job you can use this command (ctrl+c to exit)
+In order to check the program output you can use these command (ctrl+c to exit)
 ```
+#nohup will have the program output as well as the output from cdhit execution
 tail -f nohup.out
+#out.log contaings a log file with timing.
+tail -f results/[jobname]/out.log
 ```
+
 ## Command line options
 | Argument  | Description | Data type  | Required or default |
 | ------------- | ------------- | ------------- | ------------- |
@@ -57,7 +68,6 @@ tail -f nohup.out
 | -tsd_max_len  | TSD max lenght  | int  | 10  |
 | -mite_min_len  | MITE min lenght  | int  | 50  |
 | -mite_max_len  | MITE max lenght  | int  | 650  |
-
 
 
 ## Results
