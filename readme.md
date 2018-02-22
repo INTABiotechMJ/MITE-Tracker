@@ -11,10 +11,12 @@ Large genomes can be executed in desktop computers.
 
 ## How to install dependencies in linux or windows
 ```
+sudo apt-get install ncbi-blast+ virtualenv
 git clone https://github.com/weizhongli/cdhit.git
 cd cdhit/
 make
-sudo apt-get install ncbi-blast+ virtualenv
+cd ..
+
 pip install -r requirements.txt
 ```
 
@@ -25,6 +27,7 @@ git clone https://github.com/weizhongli/cdhit.git
 cd cdhit/
 make openmp=no
 #as stated in https://entropicevolution.wordpress.com/2015/09/19/compiling-cd-hit-under-mac-osx-yosemite/
+
 pip install -r requirements.txt
 
 ```
