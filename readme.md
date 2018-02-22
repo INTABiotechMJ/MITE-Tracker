@@ -76,3 +76,6 @@ tail -f results/[jobname]/out.log
 All the results are placed in _results/[yourjobname]/_. 
 Here you will find _mites.fasta_ with all the MITEs sequences 
 and also _mites.gff3_ with a gff file describing the MITEs in the genome file.
+
+# Troubleshooting
+If getting any error while running the BLASTn searches please check you blast+ version
