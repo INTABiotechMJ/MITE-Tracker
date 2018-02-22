@@ -109,7 +109,6 @@ for record in fasta_seq:
     clean_seq = ''.join(str(record.seq).splitlines())
     seq_len = len(clean_seq)
     params = (record.id, seq_len, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
-    print ""
     makelog("Adding %s (len %i) %i/%i (%i%% of total sequences in %s)" % params)
     while split_index < seq_len - MAX_TSD_LEN - FSL:
         seq = clean_seq[split_index:split_index + windows_size]

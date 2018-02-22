@@ -5,6 +5,12 @@ from Bio import SeqIO
 from subprocess import Popen, PIPE
 import os
 import Queue
+import logging
+
+def makelog(stri, do_print=True):
+    if do_print:
+        print(stri)
+    logging.debug(stri)
 
 def findIR(q, args,l_lock, irs, perc_seq, last_perc_seq):
     
@@ -135,10 +141,10 @@ def findIR(q, args,l_lock, irs, perc_seq, last_perc_seq):
             if not record_id in perc_seq or not record_id in last_perc_seq:
                 perc_seq[record_id] = curr_perc
                 last_perc_seq[record_id] = curr_perc
-                print record_id, str(curr_perc) + "%"
+                makelog(record_id + " " + str(curr_perc) + "%")
 
             if perc_seq[record_id] - last_perc_seq[record_id] >= 5:
-                print record_id, str(curr_perc) + "%"
+                makelog(record_id + " " + str(curr_perc) + "%")
                 last_perc_seq[record_id] = curr_perc
 
             perc_seq[record_id] = curr_perc
