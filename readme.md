@@ -15,6 +15,7 @@ git clone https://github.com/weizhongli/cdhit.git
 cd cdhit/
 make
 sudo apt-get install ncbi-blast+ virtualenv
+pip install -r requirements.txt
 ```
 
 ## How to install dependencies in macOS (OSx)
@@ -24,12 +25,11 @@ git clone https://github.com/weizhongli/cdhit.git
 cd cdhit/
 make openmp=no
 #as stated in https://entropicevolution.wordpress.com/2015/09/19/compiling-cd-hit-under-mac-osx-yosemite/
-```
-## Install python packages
-```
 pip install -r requirements.txt
-python miteParser.py -g genome.fasta -j jobname
-#or if you want to use virtualenv (recommended)
+
+```
+## Install python packages with virtualenv (recommended)
+```
 virtualenv venv
 source venv/bin/activate
 pip install -r requirements.txt
