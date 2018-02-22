@@ -201,6 +201,7 @@ for current_cluster in unique_clusters:
         max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
         #todo validate scoring
         max_score /= args.FSL
+        print max_score
         if max_score > 0.5:
             filtered_clusters[current_cluster].remove(x)
             filtered_clusters[current_cluster].remove(y)
