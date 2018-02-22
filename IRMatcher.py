@@ -147,7 +147,7 @@ for idx, row in df.iterrows():
 res = pd.concat(l)
 df.drop(res.index,inplace=True)
 makelog("Candidates (not nested): " + str(len(df)))
-
+makelog(cur_time())
 fs_seqs = []
 irs_seqs = []
 df = df.sort_values(by=['record','start','end'])
@@ -166,6 +166,7 @@ makelog("Writing candidates sequences")
 candidates_fasta = "results/" + args.jobname + "/mites.candidates.fasta"
 SeqIO.write(irs_seqs, candidates_fasta , "fasta")
 
+makelog("Clustering")
 cluster_file = "results/" + args.jobname + "/cluster.fasta"
 cmd_list = [
 './cdhit/cd-hit-est',
@@ -175,7 +176,6 @@ cmd_list = [
 ]
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
 out,err = p.communicate()
-
 clusters_dic = cdhitutils.loadcluster(cluster_file + ".clstr")
 filtered_clusters = cdhitutils.filtercluster(clusters_dic, 3)
 unique_clusters = set(filtered_clusters.keys())
@@ -183,10 +183,10 @@ num_clusters = len(unique_clusters)
 #loop through clusters
 for current_cluster in unique_clusters:
     #search candidates for that cluster
-    candidates = [candidate_id for (candidate_id, cluster_id) in filtered_clusters.items() if cluster_id == current_cluster]
     #all possible 2-combinations of candidates
+    candidates = filtered_clusters[current_cluster]
     for seq_id in [(x,y) for x,y in itertools.combinations(candidates, 2)]:
-        if not x in filtered_clusters[current_cluster] or not y in filtered_clusters[current_cluster]:
+        if not x in candidates or not y in candidates:
             continue
         fs_right_1 = df[(df.candidate_id == x)].iloc[0].fs_right
         fs_left_1 = df[(df.candidate_id == x)].iloc[0].fs_left
@@ -194,17 +194,18 @@ for current_cluster in unique_clusters:
         fs_right_2 = df[(df.candidate_id == y)].iloc[0].fs_right
         fs_left_2 = df[(df.candidate_id == y)].iloc[0].fs_left
         
-        score_r1_r2 = pairwise2.align.localms(fs_right_1, fs_right_2, 2, -1, -1, -.5,score_only=True)
-        score_l1_l2 = pairwise2.align.localms(fs_left_1, fs_left_2, 2, -1, -1, -.5,score_only=True)
-        score_r1_l2 = pairwise2.align.localms(fs_right_1, fs_left_2, 2, -1, -1, -.5,score_only=True)
-        score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 2, -1, -1, -.5,score_only=True)
+        score_r1_r2 = pairwise2.align.localms(fs_right_1, fs_right_2, 1, -1, -1, -1,score_only=True)
+        score_l1_l2 = pairwise2.align.localms(fs_left_1, fs_left_2, 1, -1, -1, -1,score_only=True)
+        score_r1_l2 = pairwise2.align.localms(fs_right_1, fs_left_2, 1, -1, -1, -1,score_only=True)
+        score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 1, -1, -1, -1,score_only=True)
         max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
-        #todo validate scoring
+        import ipdb; ipdb.set_trace()
         max_score /= args.FSL
-        print max_score
+        #todo validate scoring
         if max_score > 0.5:
             filtered_clusters[current_cluster].remove(x)
             filtered_clusters[current_cluster].remove(y)
+            print max_score
             print x,y
 
 #again to remove < MIN_COPY_NUMBER elements
