@@ -17,7 +17,6 @@ import pandas as pd
 from threading import Thread, Lock, active_count
 import Queue
 import logging
-import cdhitfilter
 import findir
 
 def makelog(stri, do_print=True):
