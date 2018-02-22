@@ -175,7 +175,10 @@ cmd_list = [
 '-c', '0.80','-n', '7','-d', '0','-T','0','-aL','0.8','-s','0.8','-M','0'
 ]
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
-out,err = p.communicate()
+for c in iter(lambda: p.stdout.read(), ''):
+    print c
+#out,err = p.communicate()
+makelog("Clustering done")
 clusters_dic = cdhitutils.loadcluster(cluster_file + ".clstr")
 filtered_clusters = cdhitutils.filtercluster(clusters_dic, 3)
 unique_clusters = set(filtered_clusters.keys())
@@ -199,14 +202,11 @@ for current_cluster in unique_clusters:
         score_r1_l2 = pairwise2.align.localms(fs_right_1, fs_left_2, 1, -1, -1, -1,score_only=True)
         score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 1, -1, -1, -1,score_only=True)
         max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
-        import ipdb; ipdb.set_trace()
-        max_score /= args.FSL
+        max_score /= FSL
         #todo validate scoring
         if max_score > 0.5:
             filtered_clusters[current_cluster].remove(x)
             filtered_clusters[current_cluster].remove(y)
-            print max_score
-            print x,y
 
 #again to remove < MIN_COPY_NUMBER elements
 filtered_clusters = cdhitutils.filtercluster(filtered_clusters, 3)
