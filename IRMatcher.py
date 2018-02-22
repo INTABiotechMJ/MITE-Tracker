@@ -176,7 +176,7 @@ def _findIR(q):
             if not valid_tsd:
                 continue
 
-            ir_seq = seq[mite_pos_one:mite_pos_two]
+            ir_seq = seq_fs[mite_pos_one + FSL :mite_pos_two  + FSL ]
             ir_len = mite_pos_two - mite_pos_one
 
             flanking_seq_left = seq_fs[mite_pos_one:mite_pos_one + FSL]
@@ -187,6 +187,8 @@ def _findIR(q):
             mite_end_full = mite_pos_two + split_index 
 
             new_element = (mite_start_full, mite_end_full, ir_seq, record.id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in,flanking_seq_left,flanking_seq_right,length)
+            if ir_seq == "":
+                import ipdb; ipdb.set_trace()
             with l_lock:
                 irs[record.id + "_" + str(mite_start_full) + "_" + str(mite_end_full)] = new_element
 
@@ -270,7 +272,7 @@ for record in fasta_seq:
 #In case of unprocessed sequences are left, let's wait
 q.join()
 
-makelog("Searh for nested elements")
+makelog("Search for nested elements")
 
 labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length']
 df = pd.DataFrame.from_records(irs.values(), columns=labels)
@@ -306,8 +308,6 @@ for _, row in df.iterrows():
     description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i IR_1:%s IR_2:%s " % (params)
     ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
     irs_seqs.append(ir_seq_rec)
-    if row.seq == "":
-        print row
     #flanking sequences
     fs_seq_rec = SeqRecord(Seq(row.fs_left), id=name + "L", description = "_") 
     fs_seqs.append(fs_seq_rec)
