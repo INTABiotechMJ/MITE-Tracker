@@ -4,12 +4,14 @@ IRmatcher is efficient and easy to run tool for discovering Miniature Inverted r
 
 Large genomes can be executed in desktop computers.
 
-## Requirements (just follow how to install)
+# Requirements (just follow how to install)
  - tested in macOS 10.13.1, Debian 7.6, Ubuntu 16.04, Windows 7
  - ncbi blast+ (Nucleotide-Nucleotide BLAST 2.6.0+)
  - python requirements are in requirements.txt file (bipython and pandas)
 
-## How to install dependencies in linux or windows
+# Install dependencies
+
+## Linux
 ```
 pip install -r requirements.txt
 sudo apt-get install ncbi-blast+ virtualenv
@@ -18,7 +20,7 @@ cd cdhit/
 make
 ```
 
-## How to install dependencies in macOS (OSx)
+## macOS (OSx)
 ```
 pip install -r requirements.txt
 
@@ -60,7 +62,7 @@ tail -f nohup.out
 tail -f results/[jobname]/out.log
 ```
 
-## Command line options
+# Command line options
 | Argument  | Description | Data type  | Required or default |
 | ------------- | ------------- | ------------- | ------------- |
 | -g  | Genome file in fasta format  | string  | required  |
@@ -72,7 +74,7 @@ tail -f results/[jobname]/out.log
 | -mite_max_len  | MITE max lenght  | int  | 650  |
 
 
-## Results
+# Results
 All the results are placed in _results/[yourjobname]/_. 
 Here you will find _mites.fasta_ with all the MITEs sequences 
 and also _mites.gff3_ with a gff file describing the MITEs in the genome file.
