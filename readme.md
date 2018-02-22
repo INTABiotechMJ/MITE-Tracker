@@ -1,14 +1,15 @@
 ## About
 
-IRmatcher is efficient and easy to run tool for discovering Miniature Inverted repeats Transposable Elements (MITE) in genomic sequences. It is written in python and uses ncbi's blast+ for finding inverted repeats.
-Depends on cdhit to do the clustering.
+IRmatcher is efficient and easy to run tool for discovering Miniature Inverted repeats Transposable Elements (MITE) in genomic sequences. It is written in python and uses ncbi's blast+ for finding inverted repeats and cdhit to do the clustering. 
+
+Large genomes can be executed in desktop computers.
 
 ## Requirements (just follow how to install)
  - tested in macOS 10.13.1, Debian 7.6, Ubuntu 16.04, Windows 7
  - ncbi blast+ (Nucleotide-Nucleotide BLAST 2.6.0+)
  - python requirements are in requirements.txt file (bipython and pandas)
 
-## How to install linux or windows
+## How to install dependencies in linux or windows
 ```
 git clone https://github.com/weizhongli/cdhit.git
 cd cdhit/
@@ -16,7 +17,7 @@ make
 sudo apt-get install ncbi-blast+ virtualenv
 ```
 
-## How to install macOS (OSx)
+## How to install dependencies in macOS (OSx)
 ```
 brew install ncbi-blast+ virtualenv
 git clone https://github.com/weizhongli/cdhit.git
@@ -24,7 +25,7 @@ cd cdhit/
 make openmp=no
 #as stated in https://entropicevolution.wordpress.com/2015/09/19/compiling-cd-hit-under-mac-osx-yosemite/
 ```
-
+## Install python packages
 ```
 pip install -r requirements.txt
 python miteParser.py -g genome.fasta -j jobname
