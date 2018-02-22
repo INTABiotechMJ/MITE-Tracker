@@ -2,9 +2,11 @@ query
 subject
 *.fasta
 *.fa
+*.pyc
 venv
 test
 tmp/*.tmp
+dev/
 .DS_Store
 results/*
 !results/.gitkeep 
