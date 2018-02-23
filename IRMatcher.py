@@ -172,7 +172,7 @@ cmd_list = [
 './cdhit/cd-hit-est',
 '-i',candidates_fasta,
 '-o',cluster_candidates_file,
-'-c', '0.80','-n', '7','-d','100','-T','0','-aL','0.8','-s','0.8','-M','0']
+'-c', '0.80','-n','7','-d','0','-T','0','-aL','0.8','-s','0.8','-M','0']
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
 for c in iter(lambda: p.stdout.read(), ''):
     makelog(c)
