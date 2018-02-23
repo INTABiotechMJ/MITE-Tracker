@@ -188,7 +188,7 @@ for current_cluster in unique_clusters:
     #all possible 2-combinations of candidates
     candidates = filtered_clusters[current_cluster]
     combinations = [(x,y) for x,y in itertools.combinations(candidates, 2)]
-    remove = True
+    dist_fs = 0
     for seq_id in combinations:
         x,y = seq_id
 
@@ -218,9 +218,11 @@ for current_cluster in unique_clusters:
         max_score /= FSL
         #todo validate scoring
         if max_score < 0.5:
-            remove = False
-    if remove:
+            dist_fs += 1
+    if dist_fs >= args.min_copy_number:
         makelog(str(max_score) + x + y)
+        print filtered_clusters[current_cluster]
+        print current_cluster
         del filtered_clusters[current_cluster]#.remove(x)
         #filtered_clusters[current_cluster].remove(y)
 
@@ -228,7 +230,7 @@ for current_cluster in unique_clusters:
 filtered_clusters = cdhitutils.filtercluster(filtered_clusters, args.min_copy_number, positions)
 ordered_cluster = OrderedDict(sorted(filtered_clusters.items(), key=lambda t: t[1]))
 
-makelog("Clusters " + str(len(filtered_clusters)))
+makelog("Clusters: " + str(len(filtered_clusters)))
 
 fasta_seq = SeqIO.parse(candidates_fasta, 'fasta')
 buffer_rec = []
