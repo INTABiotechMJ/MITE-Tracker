@@ -71,9 +71,17 @@ def findIR(q, args,l_lock, irs, perc_seq, last_perc_seq):
             #subject transform cause it was reversed
             sstart = splited_len - sstart 
             send = splited_len - send 
+            
             #obtain IR sequences
             seq_q = seq[qstart:qend]
             seq_q_prime = seq[send:sstart]
+
+            qstart, qend = min(qstart, qend),max(qstart, qend)
+            sstart, send = min(sstart, send),max(sstart, send)
+
+            #do not allow overlaped IRs
+            if qend >= sstart and send >= qstart:
+                continue
 
             #organice positions
             ir_start = min(qstart,qend,sstart,send)

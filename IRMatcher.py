@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from Bio import SeqIO
 from Bio import pairwise2
-from Bio.SeqUtils.lcc import lcc_simp
 from Bio.SeqRecord import SeqRecord
 import itertools
 from Bio.Seq import Seq
@@ -178,8 +177,8 @@ for c in iter(lambda: p.stdout.read(), ''):
     makelog(c)
 #out,err = p.communicate()
 makelog("Clustering done")
-clusters_dic = cdhitutils.loadcluster(cluster_candidates_file + ".clstr")
 
+clusters_dic = cdhitutils.loadcluster(cluster_candidates_file + ".clstr")
 filtered_clusters = cdhitutils.filtercluster(clusters_dic, args.min_copy_number,positions)
 unique_clusters = set(filtered_clusters.keys())
 num_clusters = len(unique_clusters)
@@ -189,6 +188,7 @@ for current_cluster in unique_clusters:
     #all possible 2-combinations of candidates
     candidates = filtered_clusters[current_cluster]
     combinations = [(x,y) for x,y in itertools.combinations(candidates, 2)]
+    remove = True
     for seq_id in combinations:
         x,y = seq_id
 
@@ -198,8 +198,8 @@ for current_cluster in unique_clusters:
         cand_y = df[(df.candidate_id == y)]
 
         #if they're partially overlapped, ignore flanking sequence comparison
-        if cand_x.iloc[0].end >= cand_y.iloc[0].start and cand_y.iloc[0].end >= cand_x.iloc[0].start:
-            continue
+#        if cand_x.iloc[0].end >= cand_y.iloc[0].start and cand_y.iloc[0].end >= cand_x.iloc[0].start:
+#            continue
 
         fs_right_1 = cand_x.iloc[0].fs_right
         fs_left_1 = cand_x.iloc[0].fs_left
@@ -213,18 +213,21 @@ for current_cluster in unique_clusters:
         score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 1, -1, -1, -1,score_only=True)
         max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
 
-
         if max_score == []:
             max_score = 0
         max_score /= FSL
         #todo validate scoring
-        if max_score > 0.5:
-            filtered_clusters[current_cluster].remove(x)
-            filtered_clusters[current_cluster].remove(y)
-
+        if max_score < 0.5:
+            remove = False
+    if remove:
+        del filtered_clusters[current_cluster]#.remove(x)
+        #filtered_clusters[current_cluster].remove(y)
+print filtered_clusters
 #again to remove < MIN_COPY_NUMBER elements
 filtered_clusters = cdhitutils.filtercluster(filtered_clusters, args.min_copy_number, positions)
 ordered_cluster = OrderedDict(sorted(filtered_clusters.items(), key=lambda t: t[1]))
+
+makelog("Clusters "+ len(filtered_clusters))
 
 fasta_seq = SeqIO.parse(candidates_fasta, 'fasta')
 buffer_rec = []
