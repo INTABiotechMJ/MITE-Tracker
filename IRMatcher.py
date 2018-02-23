@@ -200,6 +200,8 @@ for current_cluster in unique_clusters:
         score_r1_l2 = pairwise2.align.localms(fs_right_1, fs_left_2, 1, -1, -1, -1,score_only=True)
         score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 1, -1, -1, -1,score_only=True)
         max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
+        if max_score == []:
+            max_score = 0
         max_score /= FSL
         #todo validate scoring
         if max_score > 0.5:

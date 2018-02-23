@@ -58,7 +58,7 @@ In order to check the program output you can use these command (ctrl+c to exit)
 ```
 #nohup will have the program output as well as the output from cdhit execution
 tail -f nohup.out
-#out.log contaings a log file with timing.
+#out.log contaings a log file with timing information
 tail -f results/[jobname]/out.log
 ```
 
