@@ -220,14 +220,15 @@ for current_cluster in unique_clusters:
         if max_score < 0.5:
             remove = False
     if remove:
+        makelog(str(max_score) + x + y)
         del filtered_clusters[current_cluster]#.remove(x)
         #filtered_clusters[current_cluster].remove(y)
-print filtered_clusters
+
 #again to remove < MIN_COPY_NUMBER elements
 filtered_clusters = cdhitutils.filtercluster(filtered_clusters, args.min_copy_number, positions)
 ordered_cluster = OrderedDict(sorted(filtered_clusters.items(), key=lambda t: t[1]))
 
-makelog("Clusters "+ len(filtered_clusters))
+makelog("Clusters " + str(len(filtered_clusters)))
 
 fasta_seq = SeqIO.parse(candidates_fasta, 'fasta')
 buffer_rec = []
