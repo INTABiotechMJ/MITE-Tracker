@@ -219,7 +219,7 @@ for current_cluster in unique_clusters:
         #todo validate scoring
         if max_score < 0.5:
             dist_fs += 1
-    if dist_fs <= args.min_copy_number:
+    if dist_fs < args.min_copy_number:
         makelog(str(max_score) + x + y)
         print filtered_clusters[current_cluster]
         print current_cluster
