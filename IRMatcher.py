@@ -150,8 +150,10 @@ fs_seqs = []
 irs_seqs = []
 df = df.sort_values(by=['record','start','end'])
 count = 1
+positions = {}
 for index, row in df.iterrows():
     name = 'MITE_CAND_' + str(count)
+    positions[name] = (row.start, row.end)
     df.loc[index, 'candidate_id'] = name
     #append sequence record for biopython
     params = (row.record, row.start, row.end, row.tsd, row.tsd_in, row.len, row.ir_1, row.ir_2)
@@ -161,24 +163,24 @@ for index, row in df.iterrows():
 
     count += 1
 makelog("Writing candidates sequences")
-candidates_fasta = "results/" + args.jobname + "/mites.candidates.fasta"
+candidates_fasta = "results/" + args.jobname + "/candidates.fasta"
 SeqIO.write(irs_seqs, candidates_fasta , "fasta")
 
 makelog("Clustering")
-cluster_file = "results/" + args.jobname + "/cluster.fasta"
+cluster_candidates_file = "results/" + args.jobname + "/candidates.representative.fasta"
 cmd_list = [
 './cdhit/cd-hit-est',
 '-i',candidates_fasta,
-'-o',cluster_file,
-'-c', '0.80','-n', '7','-d', '0','-T','0','-aL','0.8','-s','0.8','-M','0'
-]
+'-o',cluster_candidates_file,
+'-c', '0.80','-n', '7','-d','100','-T','0','-aL','0.8','-s','0.8','-M','0']
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
 for c in iter(lambda: p.stdout.read(), ''):
     makelog(c)
 #out,err = p.communicate()
 makelog("Clustering done")
-clusters_dic = cdhitutils.loadcluster(cluster_file + ".clstr")
-filtered_clusters = cdhitutils.filtercluster(clusters_dic, 3)
+clusters_dic = cdhitutils.loadcluster(cluster_candidates_file + ".clstr")
+
+filtered_clusters = cdhitutils.filtercluster(clusters_dic, args.min_copy_number,positions)
 unique_clusters = set(filtered_clusters.keys())
 num_clusters = len(unique_clusters)
 #loop through clusters
@@ -186,20 +188,32 @@ for current_cluster in unique_clusters:
     #search candidates for that cluster
     #all possible 2-combinations of candidates
     candidates = filtered_clusters[current_cluster]
-    for seq_id in [(x,y) for x,y in itertools.combinations(candidates, 2)]:
+    combinations = [(x,y) for x,y in itertools.combinations(candidates, 2)]
+    for seq_id in combinations:
+        x,y = seq_id
+
         if not x in candidates or not y in candidates:
             continue
-        fs_right_1 = df[(df.candidate_id == x)].iloc[0].fs_right
-        fs_left_1 = df[(df.candidate_id == x)].iloc[0].fs_left
+        cand_x = df[(df.candidate_id == x)]
+        cand_y = df[(df.candidate_id == y)]
 
-        fs_right_2 = df[(df.candidate_id == y)].iloc[0].fs_right
-        fs_left_2 = df[(df.candidate_id == y)].iloc[0].fs_left
+        #if they're partially overlapped, ignore flanking sequence comparison
+        if cand_x.iloc[0].end >= cand_y.iloc[0].start and cand_y.iloc[0].end >= cand_x.iloc[0].start:
+            continue
+
+        fs_right_1 = cand_x.iloc[0].fs_right
+        fs_left_1 = cand_x.iloc[0].fs_left
+
+        fs_right_2 = cand_y.iloc[0].fs_right
+        fs_left_2 = cand_y.iloc[0].fs_left
         
         score_r1_r2 = pairwise2.align.localms(fs_right_1, fs_right_2, 1, -1, -1, -1,score_only=True)
         score_l1_l2 = pairwise2.align.localms(fs_left_1, fs_left_2, 1, -1, -1, -1,score_only=True)
         score_r1_l2 = pairwise2.align.localms(fs_right_1, fs_left_2, 1, -1, -1, -1,score_only=True)
         score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 1, -1, -1, -1,score_only=True)
         max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
+
+
         if max_score == []:
             max_score = 0
         max_score /= FSL
@@ -209,7 +223,18 @@ for current_cluster in unique_clusters:
             filtered_clusters[current_cluster].remove(y)
 
 #again to remove < MIN_COPY_NUMBER elements
-filtered_clusters = cdhitutils.filtercluster(filtered_clusters, 3)
+filtered_clusters = cdhitutils.filtercluster(filtered_clusters, args.min_copy_number, positions)
 ordered_cluster = OrderedDict(sorted(filtered_clusters.items(), key=lambda t: t[1]))
-seqs = cdhitutils.cluster2seq(ordered_cluster, candidates_fasta, cluster_file + ".filtered" )
+
+fasta_seq = SeqIO.parse(candidates_fasta, 'fasta')
+buffer_rec = []
+for record in fasta_seq:
+    for seqs in filtered_clusters.values():
+        if record.id in seqs:
+            buffer_rec.append(record)
+            continue
+all_file = "results/" + args.jobname + "/all.fasta"
+SeqIO.write(buffer_rec, all_file , "fasta")
+
+cdhitutils.cluster2seq(ordered_cluster, candidates_fasta, "results/" + args.jobname + "/families.fasta" )
 makelog(cur_time())

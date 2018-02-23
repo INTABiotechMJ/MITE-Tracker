@@ -12,12 +12,35 @@ def loadcluster(cluster_file):
         cluster_dic[name[1:]] = seqs
     return cluster_dic
 
-def filtercluster(cluster_dic, minimum):
+def filtercluster(cluster_dic, minimum, positions):
     filtered_dic = {}
     for cluster in set(cluster_dic.keys()):
+        #let's get first only valid groups to avoid unnecesary processing
         if len(cluster_dic[cluster]) >= minimum:
-            filtered_dic[cluster] = cluster_dic[cluster]
+            #group into overlapped (overlapped groups count as one individual)
+            #ie should have more than minimum elements non overlapped
+            cluster_positions = [v for k,v in positions.items() if k in cluster_dic[cluster]]
+            merged_overlaped = merge_overlap(cluster_positions)
+            if len(merged_overlaped) >= minimum:
+                filtered_dic[cluster] = cluster_dic[cluster]
     return filtered_dic
+
+def merge_overlap(intervals):
+    sorted_by_lower_bound = sorted(intervals, key=lambda tup: tup[0])
+    merged = []
+    for higher in sorted_by_lower_bound:
+        if not merged:
+            merged.append(higher)
+        else:
+            lower = merged[-1]
+            # test for intersection between lower and higher:
+            # we know via sorting that lower[0] <= higher[0]
+            if higher[0] <= lower[1]:
+                upper_bound = max(lower[1], higher[1])
+                merged[-1] = (lower[0], upper_bound)  # replace by merged interval
+            else:
+                merged.append(higher)
+    return merged
 
 def cluster2seq(cluster_dic, fasta, outfile):
     seq_file, seq_list, = open(fasta), {}

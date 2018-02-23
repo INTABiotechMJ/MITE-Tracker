@@ -74,6 +74,7 @@ def findIR(q, args,l_lock, irs, perc_seq, last_perc_seq):
             #obtain IR sequences
             seq_q = seq[qstart:qend]
             seq_q_prime = seq[send:sstart]
+
             #organice positions
             ir_start = min(qstart,qend,sstart,send)
             ir_end = max(qstart,qend,sstart,send)
@@ -89,6 +90,9 @@ def findIR(q, args,l_lock, irs, perc_seq, last_perc_seq):
 
             #again validate complexity, a value of 1 means only two different nucleotides are present
             if lcc_simp(seq_q) <= 1.2:
+                continue
+
+            if lcc_simp(seq_q_prime) <= 1.2:
                 continue
 
             #validate TSD outside TIRs
