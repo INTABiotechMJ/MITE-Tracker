@@ -61,7 +61,7 @@ def cluster2seq(cluster_dic, fasta, outfile):
         for seq_id in cluster_seqs:
             description, sequence = seq_list[seq_id]
             if not cluster_id == last_cluster:
-                filter_file.write('{0}{1}\n'.format('-'*10,cluster_id ))
+                filter_file.write('{0}\n'.format('-'*10))
                 last_cluster = cluster_id
             filter_file.write('{0}\n{1}\n'.format(description, '\n'.join([sequence[i:i+60] for i in range(0, len(sequence), 60)])))
     # close the filtered results file
