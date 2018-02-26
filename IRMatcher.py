@@ -130,9 +130,9 @@ q.join()
 
 makelog("Search for nested elements")
 
-labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length','candidate_id']
+labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length','candidate_id','status']
 df = pd.DataFrame.from_records(irs.values(), columns=labels)
-makelog("Candidates: " + str(len(df)))
+makelog("Initial candidates: " + str(len(df)))
 makelog(cur_time())
 #filter out nested (keep larger)
 l=[]
@@ -143,7 +143,7 @@ for idx, row in df.iterrows():
     l.append(res)
 res = pd.concat(l)
 df.drop(res.index,inplace=True)
-makelog("Candidates (not nested): " + str(len(df)))
+makelog("Valid candidates (not nested): " + str(len(df)))
 makelog(cur_time())
 fs_seqs = []
 irs_seqs = []
@@ -162,7 +162,7 @@ for index, row in df.iterrows():
 
     count += 1
 makelog("Writing candidates sequences")
-df.to_csv("results/" + args.jobname + "/candidates.csv", index=False)
+
 candidates_fasta = "results/" + args.jobname + "/candidates.fasta"
 SeqIO.write(irs_seqs, candidates_fasta , "fasta")
 
@@ -180,7 +180,7 @@ for c in iter(lambda: p.stdout.read(), ''):
 makelog("Clustering done")
 
 clusters_dic = cdhitutils.loadcluster(cluster_candidates_file + ".clstr")
-filtered_clusters = cdhitutils.filtercluster(clusters_dic, args.min_copy_number,positions)
+filtered_clusters = cdhitutils.filtercluster(clusters_dic, args.min_copy_number,positions, df)
 unique_clusters = set(filtered_clusters.keys())
 num_clusters = len(unique_clusters)
 #loop through clusters
@@ -189,7 +189,7 @@ for current_cluster in unique_clusters:
     #all possible 2-combinations of candidates
     candidates = filtered_clusters[current_cluster]
     combinations = [(x,y) for x,y in itertools.combinations(candidates, 2)]
-    dist_fs = 0
+    dist_fs = {}
     for seq_id in combinations:
         x,y = seq_id
 
@@ -199,8 +199,8 @@ for current_cluster in unique_clusters:
         cand_y = df[(df.candidate_id == y)]
 
         #if they're partially overlapped, ignore flanking sequence comparison
-        #if cand_x.iloc[0].end >= cand_y.iloc[0].start and cand_y.iloc[0].end >= cand_x.iloc[0].start:
-        #    continue
+        if cand_x.iloc[0].end >= cand_y.iloc[0].start and cand_y.iloc[0].end >= cand_x.iloc[0].start:
+            continue
 
         fs_right_1 = cand_x.iloc[0].fs_right
         fs_left_1 = cand_x.iloc[0].fs_left
@@ -219,15 +219,14 @@ for current_cluster in unique_clusters:
         max_score /= FSL
         #todo validate scoring
         if max_score < 0.5:
-            dist_fs += 1
-    if dist_fs < args.min_copy_number:
-        makelog('Cluster ' + current_cluster + ' deleted for flanking sequence threshold')
-        print filtered_clusters[current_cluster]
-        print current_cluster
+            dist_fs[x] = 1
+            dist_fs[y] = 1
+    if len(dist_fs) < args.min_copy_number:
+        df.loc[df['candidate_id'].isin(filtered_clusters[current_cluster]), 'status'] =  'low_cn_flank_seq'
         del filtered_clusters[current_cluster]
 
 #again to remove < MIN_COPY_NUMBER elements
-filtered_clusters = cdhitutils.filtercluster(filtered_clusters, args.min_copy_number, positions)
+#filtered_clusters = cdhitutils.filtercluster(filtered_clusters, args.min_copy_number, positions, df, 'low_copy_number_2')
 ordered_cluster = OrderedDict(sorted(filtered_clusters.items(), key=lambda t: t[1]))
 
 makelog("Clusters: " + str(len(filtered_clusters)))
@@ -241,6 +240,8 @@ for record in fasta_seq:
             continue
 all_file = "results/" + args.jobname + "/all.fasta"
 SeqIO.write(buffer_rec, all_file , "fasta")
+
+df.to_csv("results/" + args.jobname + "/candidates.csv", index=False)
 
 cdhitutils.cluster2seq(ordered_cluster, candidates_fasta, "results/" + args.jobname + "/families.fasta" )
 makelog(cur_time())
