@@ -12,14 +12,18 @@ def loadcluster(cluster_file):
         cluster_dic[name[1:]] = seqs
     return cluster_dic
 
-def filtercluster(cluster_dic, minimum, positions, df):
+def filtercluster(cluster_dic, minimum, df):
     filtered_dic = {}
     for cluster in set(cluster_dic.keys()):
         #let's get first only valid groups to avoid unnecesary processing
         if len(cluster_dic[cluster]) >= minimum:
             #group into overlapped (overlapped groups count as one individual)
             #ie should have more than minimum elements non overlapped
-            cluster_positions = [v for k,v in positions.items() if k in cluster_dic[cluster]]
+            #cluster_positions = [v for k,v in positions.items() if k in cluster_dic[cluster]]
+            res = df.loc[df['candidate_id'].isin(cluster_dic[cluster])]
+            res = res[['start','end']]
+            cluster_positions = [tuple(x) for x in res.values]
+            #import ipdb; ipdb.set_trace()
             merged_overlaped = merge_overlap(cluster_positions)
             if len(merged_overlaped) >= minimum:
                 filtered_dic[cluster] = cluster_dic[cluster]
