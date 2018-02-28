@@ -46,6 +46,8 @@ args = parser.parse_args()#pylint: disable=invalid-name
 #write results
 if not os.path.isdir("results/" + args.jobname):
     os.mkdir("results/" + args.jobname)
+if not os.path.isdir("results/" + args.jobname + "/clusters/"):
+    os.mkdir("results/" + args.jobname + "/clusters/")
 
 filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/" + args.jobname + "/out.log")
 logging.basicConfig(
@@ -167,19 +169,44 @@ candidates_fasta = "results/" + args.jobname + "/candidates.fasta"
 SeqIO.write(irs_seqs, candidates_fasta , "fasta")
 
 makelog("Clustering")
-cluster_candidates_file = "results/" + args.jobname + "/candidates.representative.fasta"
+cluster_candidates_dir = "results/" + args.jobname + "/clusters/"
+cluster_candidates_file = cluster_candidates_dir + "cluster"
+centroids_candidates_file = "results/" + args.jobname + "/candidates.centroids.fasta"
 cmd_list = [
-'./cdhit/cd-hit-est',
-'-i',candidates_fasta,
-'-o',cluster_candidates_file,
-'-c', '0.80','-n','7','-d','0','-T','0','-aL','0.8','-s','0.8','-M','0']
+'./vsearch-2.7.1/bin/vsearch',
+'--cluster_fast',candidates_fasta,
+'--threads',str(args.workers),
+#'--centroids',centroids_candidates_file,
+'--clusters',cluster_candidates_file,
+#'--uc',cluster_candidates_file,
+'-id', '0.80']
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
 for c in iter(lambda: p.stdout.read(), ''):
     makelog(c)
 #out,err = p.communicate()
 makelog("Clustering done")
 
-clusters_dic = clusterutils.loadcluster(cluster_candidates_file + ".clstr")
+#count for minimum file length
+clusters_dic = {}
+for fn in os.listdir(cluster_candidates_dir):
+     if os.path.isfile(cluster_candidates_dir + fn):
+        fh = open(cluster_candidates_dir + fn)
+        n = 0
+        for line in fh:
+            if line.startswith(">"):
+                n += 1
+                id_seq = line[1:line.find(" ")]
+                if fn in clusters_dic:
+                    clusters_dic[fn].append(id_seq)
+                else:
+                    clusters_dic[fn] = [id_seq]
+        os.unlink(cluster_candidates_dir + fn)
+#        if n < args.min_copy_number:
+#            df.loc[df['candidate_id'] == 'id_seq', 'status'] =  'low_cn'
+#            os.remove(fn)
+#            continue
+
+#clusters_dic = clusterutils.loadcluster(cluster_candidates_file + ".clstr")
 filtered_clusters = clusterutils.filtercluster(clusters_dic, args.min_copy_number,positions, df)
 unique_clusters = set(filtered_clusters.keys())
 num_clusters = len(unique_clusters)
