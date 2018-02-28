@@ -6,6 +6,7 @@ import itertools
 from Bio.Seq import Seq
 from subprocess import Popen, PIPE
 import os
+import shutil
 import time
 import argparse
 from math import ceil
@@ -132,7 +133,7 @@ q.join()
 
 makelog("Search for nested elements")
 
-labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length','candidate_id','status']
+labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length','candidate_id','status','cluster']
 df = pd.DataFrame.from_records(irs.values(), columns=labels)
 makelog("Initial candidates: " + str(len(df)))
 makelog(cur_time())
@@ -157,8 +158,8 @@ for index, row in df.iterrows():
     positions[name] = (row.start, row.end)
     df.loc[index, 'candidate_id'] = name
     #append sequence record for biopython
-    params = (row.record, row.start, row.end, row.tsd, row.tsd_in, row.len, row.ir_1, row.ir_2)
-    description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i IR_1:%s IR_2:%s " % (params)
+    params = (row.record, row.start, row.end, row.tsd, row.tsd_in, row.len, )
+    description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i " % (params)
     ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
     irs_seqs.append(ir_seq_rec)
 
@@ -179,12 +180,13 @@ cmd_list = [
 #'--centroids',centroids_candidates_file,
 '--clusters',cluster_candidates_file,
 #'--uc',cluster_candidates_file,
-'-id', '0.80']
+'-id', '0.95']
 p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
 for c in iter(lambda: p.stdout.read(), ''):
     makelog(c)
 #out,err = p.communicate()
 makelog("Clustering done")
+makelog("Filtering clusters")
 
 #count for minimum file length
 clusters_dic = {}
@@ -205,7 +207,7 @@ for fn in os.listdir(cluster_candidates_dir):
 #            df.loc[df['candidate_id'] == 'id_seq', 'status'] =  'low_cn'
 #            os.remove(fn)
 #            continue
-
+shutil.rmtree(cluster_candidates_dir)
 #clusters_dic = clusterutils.loadcluster(cluster_candidates_file + ".clstr")
 filtered_clusters = clusterutils.filtercluster(clusters_dic, args.min_copy_number,positions, df)
 unique_clusters = set(filtered_clusters.keys())
@@ -261,8 +263,10 @@ makelog("Clusters: " + str(len(filtered_clusters)))
 fasta_seq = SeqIO.parse(candidates_fasta, 'fasta')
 buffer_rec = []
 for record in fasta_seq:
-    for seqs in filtered_clusters.values():
+    for clus, seqs in filtered_clusters.items():
         if record.id in seqs:
+            df.loc[df['candidate_id'] == record.id, 'cluster'] =  clus
+            record.description = "%s CLUSTER:%s" % (record.description, clus)
             buffer_rec.append(record)
             continue
 all_file = "results/" + args.jobname + "/all.fasta"
