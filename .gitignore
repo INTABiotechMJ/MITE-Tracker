@@ -12,3 +12,4 @@ results/*
 !results/.gitkeep 
 .vscode
 cdhit/
+vsearch-*/
