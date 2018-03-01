@@ -151,8 +151,8 @@ if not args.only_cluster:
     df.drop(res.index,inplace=True)
     makelog("Valid candidates (not nested): " + str(len(df)))
     makelog(cur_time())
-    SeqIO.write(irs_seqs, candidates_fasta , "fasta")
-
+    count = 1
+  
     """
     fs_seqs = []
     irs_seqs = []
@@ -170,39 +170,56 @@ if not args.only_cluster:
         irs_seqs.append(ir_seq_rec)
         count += 1
     makelog("Writing candidates sequences")
+    #SeqIO.write(irs_seqs, candidates_fasta , "fasta")
     df.to_csv("results/" + args.jobname + "/candidates.csv", index=False)
     makelog(cur_time())"""
-    df.to_csv("results/" + args.jobname + "/candidates.csv", index=False)
+#    df.to_csv("results/" + args.jobname + "/candidates.csv", index=False)
     makelog(cur_time())
+    count = 0
+    positions = {}
+    for index, row in df.iterrows():
+        name = 'MITE_CAND_' + str(count)
+        df.loc[index, 'candidate_id'] = name
+        positions[name] = (row.start, row.end)
+        count += 1
+
+    df.to_csv("results/" + args.jobname + "/candidates.csv", index=False)
 
 if args.only_cluster:
     df = pd.read_csv("results/" + args.jobname + "/candidates.csv")
+    count = 0
+    positions = {}
+    for index, row in df.iterrows():
+        name = 'MITE_CAND_' + str(count)
+        df.loc[index, 'candidate_id'] = name
+        positions[name] = (row.start, row.end)
+        count += 1
 
 max_len = int(df[['len']].max())
 min_len = int(df[['len']].min())
 num_files = 10
 sep_size = ((max_len - min_len) / num_files) 
-margin = sep_size * 0.2
+margin = sep_size * 0.25
 last = min_len
 count = 0
 filtered_clusters = {}
+irs_seqs_total = []
 print min_len, max_len, sep_size, margin
 for i in range(1, num_files + 1):
-    makelog("Clustering file  " + str(i))
+    makelog("Creating file for clustering" + str(i))
     curr = (i * sep_size) + min_len # separations
     print last, curr
     current_seqs = df[(df.len >= last) & (df.len <= curr)]
     irs_seqs = []
     for index, row in current_seqs.iterrows():
-        name = "MITE_CAND%i" % (count, )
         params = (row.record, row.start, row.end, row.tsd, row.tsd_in, row.len)
         description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i" % (params)
-        ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
+        ir_seq_rec = SeqRecord(Seq(row.seq), id=row.candidate_id, description = description)
         irs_seqs.append(ir_seq_rec)
-        count += 1
+        irs_seqs_total.append(ir_seq_rec)
     candidates_fasta = "results/" + args.jobname + "/candidates.partial." + str(i) + ".fasta"
     SeqIO.write(irs_seqs, candidates_fasta , "fasta")
-
+    makelog("Start clustering file  " + str(i))
     cluster_candidates_file = "results/" + args.jobname + "/candidates.representative.partial." + str(i) + ".fasta"
     cmd_list = [
     './cdhit/cd-hit-est',
@@ -212,14 +229,18 @@ for i in range(1, num_files + 1):
     p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
     for c in iter(lambda: p.stdout.read(), ''):
         makelog(c)
-        pass
-
+    makelog("Done clustering file  " + str(i))
     clusters_dic = clusterutils.loadcluster(cluster_candidates_file + ".clstr")
-    new_clusters = clusterutils.filtercluster(clusters_dic, args.min_copy_number, current_seqs)
+    new_clusters = clusterutils.filtercluster(clusters_dic, args.min_copy_number,positions, current_seqs)
     filtered_clusters = dict(filtered_clusters.items() + new_clusters.items())
+    makelog("Done processing file  " + str(i))
 
     last = (i * sep_size) - margin + min_len
 makelog("Clustering done")
+
+candidates_fasta = "results/" + args.jobname + "/candidates.fasta"
+SeqIO.write(irs_seqs_total, candidates_fasta , "fasta")
+
 
 unique_clusters = set(filtered_clusters.keys())
 num_clusters = len(unique_clusters)
