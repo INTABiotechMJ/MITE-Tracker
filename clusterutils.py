@@ -12,7 +12,7 @@ def loadcluster(cluster_file):
         cluster_dic[name[1:]] = seqs
     return cluster_dic
 
-def filtercluster(cluster_dic, minimum,positions, df):
+def filtercluster(cluster_dic, minimum,positions):
     filtered_dic = {}
     for cluster in set(cluster_dic.keys()):
         #let's get first only valid groups to avoid unnecesary processing
