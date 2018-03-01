@@ -13,3 +13,4 @@ results/*
 .vscode
 cdhit/
 vsearch-*/
+nohup.out
