@@ -71,8 +71,6 @@ def findIR(q, args,l_lock, irs, perc_seq, last_perc_seq):
             #subject transform cause it was reversed
             sstart = splited_len - sstart 
             send = splited_len - send 
-            if qstart > 1149950:
-                print sstart, send
             
             #obtain IR sequences
             seq_q = seq[qstart:qend]
