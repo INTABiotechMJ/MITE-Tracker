@@ -60,13 +60,16 @@ def cluster2seq(cluster_dic, fasta, outfile):
     filter_file = open(outfile, 'w')
     # loop through the sequence list
     last_cluster = None
+    family_number = 1
     for cluster_id, cluster_seqs in cluster_dic.items():
         for seq_id in cluster_seqs:
             description, sequence = seq_list[seq_id]
+            description += " family:" + str(family_number)
             if not cluster_id == last_cluster:
                 filter_file.write('{0}\n'.format('-'*10))
                 last_cluster = cluster_id
             filter_file.write('{0}\n{1}\n'.format(description, '\n'.join([sequence[i:i+60] for i in range(0, len(sequence), 60)])))
+            family_number += 1
     # close the filtered results file
     filter_file.close()
 
