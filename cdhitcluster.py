@@ -74,6 +74,64 @@ def cluster2seq(cluster_dic, fasta, outfile):
     filter_file.close()
 
 def cluster(file_candidates_fasta, file_candidates_cluster, positions, min_copy_number, df)
+
+    max_len = int(df[['len']].max())
+    min_len = int(df[['len']].min())
+    num_files = 10
+    sep_size = ((max_len - min_len) / num_files) 
+    margin = sep_size * 0.25
+    last = min_len
+    count = 0
+    filtered_clusters = {}
+    irs_seqs_total = []
+    print min_len, max_len, sep_size, margin
+    valid_seqs = []
+    named_seqs = {}
+    for i in range(1, num_files + 1):
+        makelog("Creating file for clustering " + str(i))
+        curr = (i * sep_size) + min_len # separations
+        print last, curr
+        current_seqs = df[(df.len >= last) & (df.len <= curr)]
+        irs_seqs = []
+        for index, row in current_seqs.iterrows():
+            params = (row.record, row.start, row.end, row.tsd, row.tsd_in, row.len)
+            description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i" % (params)
+            named_seqs[row.candidate_id] = (description, row.seq)
+            ir_seq_rec = SeqRecord(Seq(row.seq), id=row.candidate_id, description = description)
+            irs_seqs.append(ir_seq_rec)
+            #irs_seqs_total.append(ir_seq_rec)
+        file_candidates_partial = file_candidates_partial_prefix + str(i) + ".fasta"
+        SeqIO.write(irs_seqs, file_candidates_partial , "fasta")
+        makelog("Start clustering file  " + str(i))
+        candidates_partial_repr = candidates_partial_repr_prefix + str(i) + ".fasta"
+        cmd_list = [
+        './cdhit/cd-hit-est',
+        '-i',file_candidates_partial,
+        '-o',candidates_partial_repr,
+        '-c', '0.80','-n','7','-d','0','-T','0','-aL','0.8','-s','0.8','-M','0']
+        p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
+        for c in iter(lambda: p.stdout.read(), ''):
+            makelog(c)
+        makelog("Done clustering file  " + str(i))
+        clusters_dic = clusterutils.loadcluster(candidates_partial_repr + ".clstr")
+        new_clusters = clusterutils.filtercluster(clusters_dic, args.min_copy_number,positions)
+        #import ipdb; ipdb.set_trace()
+        valid_seqs += [item for sublist in new_clusters.values() for item in sublist]
+    #    filtered_clusters = dict(filtered_clusters.items() + new_clusters.items())
+        makelog("Done processing file  " + str(i))
+
+        last = (i * sep_size) - margin + min_len
+
+    #write only valid sequences
+    valid_seq_records = []
+    for k,v in named_seqs.items():
+        if k in valid_seqs:
+            description, seq = v
+            ir_seq_rec = SeqRecord(Seq(seq), id=k, description=description)
+            valid_seq_records.append(ir_seq_rec)
+
+    SeqIO.write(valid_seq_records, file_candidates_fasta , "fasta")
+
     makelog("Clustering valid sequences using cdhit")
     cmd_list = [
     './cdhit/cd-hit-est',

@@ -260,9 +260,6 @@ for k,v in named_seqs.items():
 
 SeqIO.write(valid_seq_records, file_candidates_fasta , "fasta")
 
-import cdhitcluster
-cdhitcluster.cluster(file_candidates_fasta, file_candidates_cluster, positions, min_copy_number, df)
-
 makelog("Clustering valid sequences")
 cmd_list = [
 './cdhit/cd-hit-est',
