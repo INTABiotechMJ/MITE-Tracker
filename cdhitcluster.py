@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 import itertools
 import os
+import logging
+
+def makelog(stri, do_print=True):
+    if do_print:
+        print(stri)
+    logging.debug(stri)
 
 def loadcluster(cluster_file):
     cluster_file, cluster_dic = open(cluster_file), {}
@@ -73,8 +79,13 @@ def cluster2seq(cluster_dic, fasta, outfile):
     # close the filtered results file
     filter_file.close()
 
-def cluster(file_candidates_fasta, file_candidates_cluster, positions, min_copy_number, df)
-
+def cluster(file_names, positions, min_copy_number, df, FSL):
+    from Bio.SeqRecord import SeqRecord
+    from Bio.Seq import Seq
+    from Bio import SeqIO
+    from Bio import pairwise2
+    from subprocess import Popen, PIPE
+    from collections import OrderedDict
     max_len = int(df[['len']].max())
     min_len = int(df[['len']].min())
     num_files = 10
@@ -87,8 +98,9 @@ def cluster(file_candidates_fasta, file_candidates_cluster, positions, min_copy_
     print min_len, max_len, sep_size, margin
     valid_seqs = []
     named_seqs = {}
+    print '*' * 20
     for i in range(1, num_files + 1):
-        makelog("Creating file for clustering " + str(i))
+        makelog("Clustering file " + str(i))
         curr = (i * sep_size) + min_len # separations
         print last, curr
         current_seqs = df[(df.len >= last) & (df.len <= curr)]
@@ -100,26 +112,21 @@ def cluster(file_candidates_fasta, file_candidates_cluster, positions, min_copy_
             ir_seq_rec = SeqRecord(Seq(row.seq), id=row.candidate_id, description = description)
             irs_seqs.append(ir_seq_rec)
             #irs_seqs_total.append(ir_seq_rec)
-        file_candidates_partial = file_candidates_partial_prefix + str(i) + ".fasta"
+        file_candidates_partial = file_names['file_candidates_partial_prefix'] + str(i) + ".fasta"
         SeqIO.write(irs_seqs, file_candidates_partial , "fasta")
-        makelog("Start clustering file  " + str(i))
-        candidates_partial_repr = candidates_partial_repr_prefix + str(i) + ".fasta"
+        candidates_partial_repr = file_names['candidates_partial_repr_prefix'] + str(i) + ".fasta"
         cmd_list = [
         './cdhit/cd-hit-est',
-        '-i',file_candidates_partial,
-        '-o',candidates_partial_repr,
+        '-i', file_candidates_partial,
+        '-o', candidates_partial_repr,
         '-c', '0.80','-n','7','-d','0','-T','0','-aL','0.8','-s','0.8','-M','0']
         p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
         for c in iter(lambda: p.stdout.read(), ''):
+            continue
             makelog(c)
-        makelog("Done clustering file  " + str(i))
-        clusters_dic = clusterutils.loadcluster(candidates_partial_repr + ".clstr")
-        new_clusters = clusterutils.filtercluster(clusters_dic, args.min_copy_number,positions)
-        #import ipdb; ipdb.set_trace()
+        clusters_dic = loadcluster(candidates_partial_repr + ".clstr")
+        new_clusters = filtercluster(clusters_dic, min_copy_number,positions)
         valid_seqs += [item for sublist in new_clusters.values() for item in sublist]
-    #    filtered_clusters = dict(filtered_clusters.items() + new_clusters.items())
-        makelog("Done processing file  " + str(i))
-
         last = (i * sep_size) - margin + min_len
 
     #write only valid sequences
@@ -130,22 +137,23 @@ def cluster(file_candidates_fasta, file_candidates_cluster, positions, min_copy_
             ir_seq_rec = SeqRecord(Seq(seq), id=k, description=description)
             valid_seq_records.append(ir_seq_rec)
 
-    SeqIO.write(valid_seq_records, file_candidates_fasta , "fasta")
+    SeqIO.write(valid_seq_records, file_names['file_candidates_fasta'] , "fasta")
 
     makelog("Clustering valid sequences using cdhit")
     cmd_list = [
     './cdhit/cd-hit-est',
-    '-i',file_candidates_fasta,
-    '-o',file_candidates_cluster,
+    '-i',file_names['file_candidates_fasta'],
+    '-o',file_names['file_candidates_cluster'],
     '-c', '0.80','-n','7','-d','0','-T','0','-aL','0.8','-s','0.8','-M','0']
     p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
     for c in iter(lambda: p.stdout.read(), ''):
+        continue
         makelog(c)
     #out,err = p.communicate()
     makelog("Clustering done")
 
-    clusters_dic = clusterutils.loadcluster(file_candidates_cluster + ".clstr")
-    filtered_clusters = clusterutils.filtercluster(clusters_dic, min_copy_number, positions)
+    clusters_dic = loadcluster(file_names['file_candidates_cluster'] + ".clstr")
+    filtered_clusters = filtercluster(clusters_dic, min_copy_number, positions)
     unique_clusters = set(filtered_clusters.keys())
     num_clusters = len(unique_clusters)
 
@@ -182,12 +190,12 @@ def cluster(file_candidates_fasta, file_candidates_cluster, positions, min_copy_
 
             if max_score == []:
                 max_score = 0
-            max_score /= args.FSL
+            max_score /= FSL
             #todo validate scoring
             if max_score < 0.5:
                 dist_fs[x] = 1
                 dist_fs[y] = 1
-        if len(dist_fs) < args.min_copy_number:
+        if len(dist_fs) < min_copy_number:
             df.loc[df['candidate_id'].isin(filtered_clusters[current_cluster]), 'status'] =  'low_cn_flank_seq'
             del filtered_clusters[current_cluster]
 
@@ -197,7 +205,7 @@ def cluster(file_candidates_fasta, file_candidates_cluster, positions, min_copy_
 
     makelog("Clusters: " + str(len(filtered_clusters)) + " writing sequences")
 
-    fasta_seq = SeqIO.parse(file_candidates_fasta, 'fasta')
+    fasta_seq = SeqIO.parse(file_names['file_candidates_fasta'], 'fasta')
     buffer_rec = []
     for record in fasta_seq:
         for clus, seqs in filtered_clusters.items():
@@ -208,7 +216,7 @@ def cluster(file_candidates_fasta, file_candidates_cluster, positions, min_copy_
                 buffer_rec.append(record)
                 continue
 
-    SeqIO.write(buffer_rec, all_file , "fasta")
-
-    df.to_csv(file_candidates_csv, index=False)
-    clusterutils.cluster2seq(ordered_cluster, file_candidates_fasta, families_file )
+    SeqIO.write(buffer_rec, file_names['all_file'] , "fasta")
+    df.to_csv(file_names['file_candidates_csv'], index=False)
+    cluster2seq(ordered_cluster, file_names['file_candidates_fasta'], file_names['families_file'] )
+    return True
