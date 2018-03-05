@@ -9,7 +9,6 @@ import os
 import time
 import argparse
 from math import ceil
-import clusterutils
 from collections import OrderedDict
 import sys
 import pandas as pd
@@ -31,6 +30,7 @@ parser.add_argument("--tsd_max_len", help="TSD max lenght", type=int, default=10
 parser.add_argument("--FSL", help="Flanking seq length for comparison", type=int, default=50)
 parser.add_argument("--min_copy_number", help="Minimum CN for families", type=int, default=3)
 parser.add_argument("--task", help="Task: all|candidates|cluster (default=all)", default='all')
+parser.add_argument("--cluster_method", help="Method: split|single", default='split')
 
 args = parser.parse_args()#pylint: disable=invalid-name
 
@@ -67,14 +67,19 @@ MITE_MIN_LEN = args.mite_min_len
 
 start_time = time.time()
 
-if not args.task in ('all', 'cluster', 'candidates'):
-    make_log('task parameter not valid')
-    exit()
 
 def makelog(stri, do_print=True):
     if do_print:
         print(stri)
     logging.debug(stri)
+
+if not args.task in ('all', 'cluster', 'candidates'):
+    makelog('task parameter not valid')
+    exit()
+
+if not args.cluster_method in ('split', 'single'):
+    makelog('cluster parameter not valid')
+    exit()
 
 def cur_time():
     global start_time
@@ -158,8 +163,9 @@ if args.task == 'all' or args.task == 'candidates':
         res = df[(df.record == row.record) & (df.start + row.ir_length >= row.start) & (df.end  - row.ir_length <= row.end) & (df.index != idx) ]
         df.drop(res.index,inplace=True)
         #res = df[(df.record == row.record) & (df.start >= row.start) & (df.end <= row.end ) & (df.index != idx) ]
-        l.append(res)
-    res = pd.concat(l)
+        #l.append(res)
+#    if l:
+#        res = pd.concat(l)
     makelog("Valid candidates (not nested): " + str(len(df)))
     makelog(cur_time())
     count = 1
@@ -207,5 +213,10 @@ if args.task == 'cluster':
         count += 1
 
 if args.task == 'all' or args.task == 'cluster':
-    import cdhitcluster
-    cdhitcluster.cluster(file_names, positions, args.min_copy_number, df, args.FSL)
+    if args.cluster_method == 'split':
+        import cdhitcluster_split
+        cdhitcluster_split.cluster(file_names, positions, args.min_copy_number, df, args.FSL)
+    if args.cluster_method == 'single':
+        import cdhitcluster_single
+        cdhitcluster_single.cluster(file_names, positions, args.min_copy_number, df, args.FSL)
+makelog(cur_time())

@@ -13,7 +13,6 @@ def makelog(stri, do_print=True):
     logging.debug(stri)
 
 def findIR(q, args,l_lock, irs, perc_seq, last_perc_seq):
-    
     while True:
         try:
             seq, seq_fs, split_index, record_id,seq_len = q.get(timeout=5)
@@ -97,10 +96,10 @@ def findIR(q, args,l_lock, irs, perc_seq, last_perc_seq):
             #ir_seq = seq[ir_start:ir_end]
 
             #again validate complexity, a value of 1 means only two different nucleotides are present
-            if lcc_simp(seq_q) <= 1.2:
+            if lcc_simp(seq_q.upper()) <= 1.2:
                 continue
 
-            if lcc_simp(seq_q_prime) <= 1.2:
+            if lcc_simp(seq_q_prime.upper()) <= 1.2:
                 continue
 
             #validate TSD outside TIRs
