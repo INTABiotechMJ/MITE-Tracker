@@ -7,15 +7,30 @@ import os
 import Queue
 import logging
 
+def has_overlapped(tir_start, tir_end, tir_positions, record_id, count):
+    for curr_count in range(count - 1, count + 2):
+        print 'curr_count', curr_count
+        index = "%s_%i" % (record_id, (curr_count)) 
+        print 'index', index
+        if index in tir_positions:
+            for tir in tir_positions[index]:
+                print 'tir', tir
+                other_start, other_end = tir
+                if tir_start >= other_start and tir_end <= other_end:
+                    return True
+    return False
+
 def makelog(stri, do_print=True):
     if do_print:
         print(stri)
     logging.debug(stri)
 
-def findIR(q, args,l_lock, irs, perc_seq, last_perc_seq):
+tir_positions = {}
+def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
+    global tir_positions
     while True:
         try:
-            seq, seq_fs, split_index, record_id,seq_len = q.get(timeout=5)
+            seq, seq_fs, split_index, record_id, seq_len, count = q.get(timeout=5)
         except Queue.Empty:
             break
         splited_len = len(seq)
@@ -142,10 +157,52 @@ def findIR(q, args,l_lock, irs, perc_seq, last_perc_seq):
             #calculate positions in full sequence
             mite_start_full = mite_pos_one + split_index
             mite_end_full = mite_pos_two + split_index 
-            new_element = (mite_start_full, mite_end_full, ir_seq, record_id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in,flanking_seq_left,flanking_seq_right,length,'','unfiltered','')
-
+            #new_element = (mite_start_full, mite_end_full, ir_seq, record_id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in,flanking_seq_left,flanking_seq_right,length,'','unfiltered','')
+            new_element = {
+                'start': mite_start_full,
+                'end': mite_end_full, 
+                'end': mite_end_full, 
+                'seq': ir_seq, 
+                'record': record_id, 
+                'ir_len': ir_len, 
+                'tir1_start': mite_start_full,
+                'tir1_end': mite_start_full + length,
+                'tir2_start': mite_end_full - length,
+                'tir2_end': mite_end_full,
+                'tir1_seq': seq_q, 
+                'tir2_seq': seq_q_prime,
+                'tsd': tsd_one,
+                'tsd_in': tsd_in,
+                'fs_l': flanking_seq_left,
+                'fs_r': flanking_seq_right,
+                'len': length,
+                'cand_id': '',
+                'status': 'unfiltered',
+                'cluster': ''
+            }
             with l_lock:
-                irs[record_id + "_" + str(mite_start_full) + "_" + str(mite_end_full)] = new_element
+                #we don't want overlapped TIRs, save the broader
+                is_nested = False
+                has_nested = False
+                for curr_count in range(count - 1, count + 2):
+                    #print 'curr_count', curr_count
+                    index = "%s_%i" % (record_id, (curr_count)) 
+                    if index in candidates:
+                        for candidate in candidates[index]:
+                            # if new element TIR is nested in other TIR
+                            if new_element['start'] >= candidate['tir1_start'] and
+                                new_element['start'] <= candidate['tir1_end'] and
+                                new_element['end'] >= candidate['tir2_start'] and
+                                new_element['end'] <= candidate['tir2_end']:
+                                is_nested = True
+
+                            if candidate['start'] >= new_element['tir1_start'] and
+                                candidate['start'] <= new_element['tir1_end'] and
+                                candidate['end'] >= new_element['tir2_start'] and
+                                candidate['end'] <= new_element['tir2_end']:
+                                has_nested = True
+
+                    tir_positions[index].append((mite_start_full, mite_start_full + length))
 
             curr_perc = split_index * 100 / seq_len
 

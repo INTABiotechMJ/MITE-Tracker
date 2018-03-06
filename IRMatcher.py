@@ -30,7 +30,7 @@ parser.add_argument("--tsd_max_len", help="TSD max lenght", type=int, default=10
 parser.add_argument("--FSL", help="Flanking seq length for comparison", type=int, default=50)
 parser.add_argument("--min_copy_number", help="Minimum CN for families", type=int, default=3)
 parser.add_argument("--task", help="Task: all|candidates|cluster (default=all)", default='all')
-parser.add_argument("--cluster_method", help="Method: split|single", default='split')
+parser.add_argument("--cluster_method", help="Method: split|single|vsearch", default='single')
 
 args = parser.parse_args()#pylint: disable=invalid-name
 
@@ -44,11 +44,14 @@ file_names = {}
 file_names['file_candidates_fasta'] = "results/" + args.jobname + "/candidates.fasta"
 file_names['file_candidates_cluster'] = "results/" + args.jobname + "/candidates.fasta.cluster"
 file_names['file_candidates_csv'] = "results/" + args.jobname + "/candidates.csv"
+file_names['file_temp_cluster_dir'] = "results/" + args.jobname + "/temp/"
+file_names['file_temp_cluster'] =file_names['file_temp_cluster_dir'] + "clust"
 file_names['file_candidates_partial_prefix'] = "results/" + args.jobname + "/temp/candidates.partial."
 file_names['candidates_partial_cluster'] = "results/" + args.jobname + "/candidates.cluster.fasta"
 file_names['candidates_partial_repr_prefix'] =  "results/" + args.jobname + "/temp/candidates.representative.partial."
 file_names['all_file'] = "results/" + args.jobname + "/all.fasta"
 file_names['families_file'] = "results/" + args.jobname + "/families.fasta"
+file_names['file_candidates_dir'] = "results/" + args.jobname + "/temp/"
 
 filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/" + args.jobname + "/out.log")
 logging.basicConfig(
@@ -77,7 +80,7 @@ if not args.task in ('all', 'cluster', 'candidates'):
     makelog('task parameter not valid')
     exit()
 
-if not args.cluster_method in ('split', 'single'):
+if not args.cluster_method in ('split', 'single','vsearch'):
     makelog('cluster parameter not valid')
     exit()
 
@@ -103,7 +106,7 @@ if args.task == 'all' or args.task == 'candidates':
     l_lock = Lock()
     perc_seq = {}
     last_perc_seq = {}
-    irs = {}
+    candidates = {}
 
     for i in range(args.workers):
         worker = Thread(target=findir.findIR, args=(q,args,l_lock, irs, perc_seq, last_perc_seq))
@@ -122,7 +125,6 @@ if args.task == 'all' or args.task == 'candidates':
     fasta_seq = SeqIO.parse(args.genome, 'fasta')
     for record in fasta_seq:
         processed = False
-        total_queue_count = 1
         queue_count = 1
         record_count += 1
         porc_ant = 0
@@ -134,9 +136,8 @@ if args.task == 'all' or args.task == 'candidates':
         while split_index < seq_len - MAX_TSD_LEN - args.FSL:
             seq = clean_seq[split_index:split_index + windows_size]
             seq_fs = clean_seq[split_index - args.FSL :split_index + windows_size + args.FSL]
-            q.put((seq, seq_fs, split_index,record.id,seq_len,))
+            q.put((seq, seq_fs, split_index,record.id,seq_len,queue_count,))
             queue_count += 1
-            total_queue_count += 1
             split_index += MITE_MAX_LEN
             current_processing_size += MITE_MAX_LEN
             if q.qsize() >= max_queue_size:
@@ -152,16 +153,19 @@ if args.task == 'all' or args.task == 'candidates':
 
     makelog("Search for nested elements")
 
-    labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length','candidate_id','status','cluster']
-    df = pd.DataFrame.from_records(irs.values(), columns=labels)
+    #labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length','candidate_id','status','cluster']
+    df = pd.DataFrame.from_records(candidates)#, columns=labels)
     makelog("Initial candidates: " + str(len(df)))
     makelog(cur_time())
     #filter out nested (keep larger)
-    l=[]
-    for idx, row in df.iterrows():
+#    l=[]
+#    for idx, row in df.iterrows():
         #filter all that are nested into this
-        res = df[(df.record == row.record) & (df.start + row.ir_length >= row.start) & (df.end  - row.ir_length <= row.end) & (df.index != idx) ]
-        df.drop(res.index,inplace=True)
+#        res = df[(df.record == row.record) & (df.start + row.ir_length >= row.start) & (df.end  - row.ir_length <= row.end) & (df.index != idx) ]
+#        print res
+#        if len(res) > 0:
+#             import ipdb; ipdb.set_trace()
+#        df.drop(res.index,inplace=True)
         #res = df[(df.record == row.record) & (df.start >= row.start) & (df.end <= row.end ) & (df.index != idx) ]
         #l.append(res)
 #    if l:
@@ -193,13 +197,20 @@ if args.task == 'all' or args.task == 'candidates':
 #    df.to_csv(file_candidates_csv, index=False)
     count = 0
     positions = {}
+    irs_seqs = []
     df = df.sort_values('start')
     for index, row in df.iterrows():
         name = 'MITE_CAND_' + str(count)
+        
+        params = (row.record, row.start, row.end, row.tsd, row.tsd_in, row.len)
+        description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i" % (params)
+        ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
+        irs_seqs.append(ir_seq_rec)
+
         df.loc[index, 'candidate_id'] = name
         positions[name] = (row.start, row.end)
         count += 1
-
+    SeqIO.write(irs_seqs, file_names['file_candidates_fasta'] , "fasta")
     df.to_csv(file_names['file_candidates_csv'], index=False)
 
 if args.task == 'cluster':
@@ -219,4 +230,7 @@ if args.task == 'all' or args.task == 'cluster':
     if args.cluster_method == 'single':
         import cdhitcluster_single
         cdhitcluster_single.cluster(file_names, positions, args.min_copy_number, df, args.FSL)
+    if args.cluster_method == 'vsearch':
+        import vsearchcluster
+        vsearchcluster.cluster(file_names, positions, args.min_copy_number, df, args.FSL)
 makelog(cur_time())
