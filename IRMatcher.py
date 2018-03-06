@@ -5,7 +5,7 @@ from Bio.SeqRecord import SeqRecord
 import itertools
 from Bio.Seq import Seq
 from subprocess import Popen, PIPE
-import os
+import os, shutil
 import time
 import argparse
 from math import ceil
@@ -34,12 +34,8 @@ parser.add_argument("--cluster_method", help="Method: split|single|vsearch", def
 
 args = parser.parse_args()#pylint: disable=invalid-name
 
-#write results
-if not os.path.isdir("results/" + args.jobname):
-    os.mkdir("results/" + args.jobname)
-if not os.path.isdir("results/" + args.jobname + "/temp/"):
-    os.mkdir("results/" + args.jobname + "/temp/")
 
+#file names
 file_names = {}
 file_names['file_candidates_fasta'] = "results/" + args.jobname + "/candidates.fasta"
 file_names['file_candidates_cluster'] = "results/" + args.jobname + "/candidates.fasta.cluster"
@@ -52,6 +48,15 @@ file_names['candidates_partial_repr_prefix'] =  "results/" + args.jobname + "/te
 file_names['all_file'] = "results/" + args.jobname + "/all.fasta"
 file_names['families_file'] = "results/" + args.jobname + "/families.fasta"
 file_names['file_candidates_dir'] = "results/" + args.jobname + "/temp/"
+
+#write dir for results
+if not os.path.isdir("results/" + args.jobname):
+    os.mkdir("results/" + args.jobname)
+
+if os.path.isdir(file_names['file_temp_cluster_dir']):
+    shutil.rmtree(file_names['file_temp_cluster_dir'])
+os.mkdir(file_names['file_temp_cluster_dir'])
+
 
 filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/" + args.jobname + "/out.log")
 logging.basicConfig(
@@ -154,7 +159,7 @@ if args.task == 'all' or args.task == 'candidates':
 
     #labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length','candidate_id','status','cluster']
     total_candidates = {}
-    count = 0
+    count = 1
     irs_seqs = []
     for part in candidates.values():
         for candidate in part:
@@ -166,6 +171,7 @@ if args.task == 'all' or args.task == 'candidates':
             #record
             params = (candidate['record'], candidate['start'], candidate['end'], candidate['tsd'], candidate['tsd_in'], candidate['len'])
             description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i" % (params)
+            candidate['description'] = description
             ir_seq_rec = SeqRecord(Seq(candidate['seq']), id=candidate['candidate_id'], description=description)
             irs_seqs.append(ir_seq_rec)
     df = pd.DataFrame(total_candidates)

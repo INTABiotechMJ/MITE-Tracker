@@ -50,17 +50,7 @@ def merge_overlap(intervals):
                 merged.append(higher)
     return merged
 
-def cluster2seq(cluster_dic, fasta, outfile):
-    seq_file, seq_list, = open(fasta), {}
-    # parse through the fasta file and obtain the sequence
-    seq_groups = (x[1] for x in itertools.groupby(seq_file, key=lambda line: line[0] == '>'))
-    for header in seq_groups:
-        description = header.next().strip()
-        header = description.split(" ")[0]
-        sequence = ''.join(seq_line.strip() for seq_line in seq_groups.next())
-        seq_list[header[1:]] = (description,sequence)
-    # close the sequence file
-    seq_file.close()
+def cluster2seq(cluster_dic, candidates, outfile):
     # open the filter_output file
     filter_file = open(outfile, 'w')
     # loop through the sequence list
@@ -68,13 +58,13 @@ def cluster2seq(cluster_dic, fasta, outfile):
     family_number = 1
     for cluster_id, cluster_seqs in cluster_dic.items():
         for seq_id in cluster_seqs:
-            description, sequence = seq_list[seq_id]
-            description += " family:" + str(family_number)
+            cand_id, description, sequence = candidates[seq_id]['candidate_id'], candidates[seq_id]['description'],candidates[seq_id]['seq']
+            header = ">%s %s family: %s" % (cand_id, description, str(family_number)) 
             if not cluster_id == last_cluster:
                 filter_file.write('{0}\n'.format('-'*10))
                 last_cluster = cluster_id
-            filter_file.write('{0}\n{1}\n'.format(description, '\n'.join([sequence[i:i+60] for i in range(0, len(sequence), 60)])))
-            family_number += 1
+            filter_file.write('{0}\n{1}\n'.format(header, '\n'.join([sequence[i:i+60] for i in range(0, len(sequence), 60)])))
+        family_number += 1
     # close the filtered results file
     filter_file.close()
 
@@ -85,7 +75,7 @@ def cluster(file_names, candidates, min_copy_number, FSL):
     from Bio import pairwise2
     from subprocess import Popen, PIPE
     from collections import OrderedDict
-    import os, shutil
+    import os
 
     makelog("Clustering")
     cmd_list = [
@@ -94,7 +84,7 @@ def cluster(file_names, candidates, min_copy_number, FSL):
     '--threads','2',
     #'--centroids',centroids_candidates_file,
     '--clusters',file_names['file_temp_cluster'],
-    '--iddef','0',
+    '--iddef','1',
     #'--uc',cluster_candidates_file,
     '-id', '0.8']
     p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
@@ -123,9 +113,8 @@ def cluster(file_names, candidates, min_copy_number, FSL):
     #            df.loc[df['candidate_id'] == 'id_seq', 'status'] =  'low_cn'
     #            os.remove(fn)
     #            continue
-    #shutil.rmtree(file_names['file_temp_cluster_dir'])
     #clusters_dic = loadcluster(cluster_candidates_file + ".clstr")
-    filtered_clusters = filtercluster(clusters_dic, min_copy_number,candidates)
+    filtered_clusters = filtercluster(clusters_dic, min_copy_number, candidates)
     unique_clusters = set(filtered_clusters.keys())
     num_clusters = len(unique_clusters)
     #loop through clusters
@@ -175,14 +164,11 @@ def cluster(file_names, candidates, min_copy_number, FSL):
 #    ordered_cluster = OrderedDict(sorted(filtered_clusters.items(), key=lambda t: t[1]))
 
     makelog("Clusters: " + str(len(filtered_clusters)))
-
     buffer_rec = []
     for candidate in candidates.values():
         for clus, seqs in filtered_clusters.items():
             if candidate['candidate_id'] in seqs:
-                params = (candidate['record'], candidate['start'], candidate['end'], candidate['tsd'], candidate['tsd_in'], candidate['len'], clus)
-                description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i CLUSTER:%s" % (params)
-                record = SeqRecord(Seq(candidate['seq']), id=candidate['candidate_id'], description=description)
+                record = SeqRecord(Seq(candidate['seq']), id=candidate['candidate_id'], description=candidate['description'])
                 buffer_rec.append(record)
     SeqIO.write(buffer_rec, file_names['all_file'] , "fasta")
     cluster2seq(filtered_clusters, candidates, file_names['families_file'])
