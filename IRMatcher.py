@@ -30,7 +30,7 @@ parser.add_argument("--tsd_max_len", help="TSD max lenght", type=int, default=10
 parser.add_argument("--FSL", help="Flanking seq length for comparison", type=int, default=50)
 parser.add_argument("--min_copy_number", help="Minimum CN for families", type=int, default=3)
 parser.add_argument("--task", help="Task: all|candidates|cluster (default=all)", default='all')
-parser.add_argument("--cluster_method", help="Method: split|single|vsearch", default='single')
+parser.add_argument("--cluster_method", help="Method: split|single|vsearch", default='vsearch')
 args = parser.parse_args()#pylint: disable=invalid-name
 
 
@@ -165,7 +165,7 @@ if args.task == 'all' or args.task == 'candidates':
             candidate['candidate_id'] = name
             total_candidates[name] = candidate
             #record
-            params = (candidate['record'], candidate['start'], candidate['end'], candidate['tsd'], candidate['tsd_in'], candidate['len'])
+            params = (candidate['record'], candidate['start'], candidate['end'], candidate['tsd'], candidate['tsd_in'], candidate['ir_len'])
             description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i" % (params)
             candidate['description'] = description
             ir_seq_rec = SeqRecord(Seq(candidate['seq']), id=candidate['candidate_id'], description=description)
@@ -179,13 +179,9 @@ if args.task == 'all' or args.task == 'candidates':
 
 if args.task == 'cluster':
     df = pd.read_csv(file_names['file_candidates_csv'])
-    count = 0
-    positions = {}
+    total_candidates = {}
     for index, row in df.sort_values('start').iterrows():
-        name = 'MITE_CAND_' + str(count)
-        df.loc[index, 'candidate_id'] = name
-        positions[name] = (row.start, row.end)
-        count += 1
+        total_candidates[row.candidate_id] = row.to_dict()
 
 if args.task == 'all' or args.task == 'cluster':
     if args.cluster_method == 'split':

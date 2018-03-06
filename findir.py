@@ -82,7 +82,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                 continue
             #subject transform cause it was reversed
             sstart = splited_len - sstart 
-            send = splited_len - send 
+            send = splited_len - send
             
             #obtain IR sequences
             seq_q = seq[qstart:qend]
@@ -123,8 +123,8 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                 tsd_two = seq_fs[ir_end + args.FSL:ir_end + i + args.FSL]
                 if tsd_one.lower() == tsd_two.lower():
                     valid_tsd = True
-                    mite_pos_one = ir_start - i
-                    mite_pos_two = ir_end + i
+                    mite_pos_one = ir_start - i + args.FSL
+                    mite_pos_two = ir_end + i + args.FSL
                     tsd_in = 'no'
                     break
                 i -= 1
@@ -137,8 +137,8 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                     tsd_two = seq_fs[ir_end - i + args.FSL:ir_end + args.FSL]
                     if tsd_one.lower() == tsd_two.lower():
                         valid_tsd = True
-                        mite_pos_one = ir_start
-                        mite_pos_two = ir_end 
+                        mite_pos_one = ir_start + args.FSL
+                        mite_pos_two = ir_end  + args.FSL
                         tsd_in = 'yes'
                         break
                     i -= 1
@@ -146,15 +146,17 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             if not valid_tsd:
                 continue
 
-            ir_seq = seq_fs[mite_pos_one + args.FSL :mite_pos_two  + args.FSL ]
+            ir_seq = seq_fs[mite_pos_one:mite_pos_two]
             ir_len = mite_pos_two - mite_pos_one
 
-            flanking_seq_left = seq_fs[mite_pos_one:mite_pos_one + args.FSL]
-            flanking_seq_right = seq_fs[mite_pos_two+args.FSL:mite_pos_two + args.FSL + args.FSL]
-           
+            fs_start = max(0,mite_pos_one - args.FSL)
+            flanking_seq_left = seq_fs[fs_start:mite_pos_one]
+            flanking_seq_right = seq_fs[mite_pos_two:mite_pos_two + args.FSL]
+
             #calculate positions in full sequence
             mite_start_full = mite_pos_one + split_index
-            mite_end_full = mite_pos_two + split_index 
+            mite_end_full = mite_pos_two + split_index
+            
             #new_element = (mite_start_full, mite_end_full, ir_seq, record_id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in,flanking_seq_left,flanking_seq_right,length,'','unfiltered','')
             new_element = {
                 'start': mite_start_full,

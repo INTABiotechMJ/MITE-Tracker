@@ -82,6 +82,7 @@ def cluster(file_names, candidates, min_copy_number, FSL):
     './vsearch-2.7.1/bin/vsearch',
     '--cluster_fast',file_names['file_candidates_fasta'],
     '--threads','2',
+    '--strand','both',
     #'--centroids',centroids_candidates_file,
     '--clusters',file_names['file_temp_cluster'],
     '--iddef','1',
@@ -157,6 +158,7 @@ def cluster(file_names, candidates, min_copy_number, FSL):
                 dist_fs[y] = 1
         if len(dist_fs) < min_copy_number:
             #df.loc[df['candidate_id'].isin(filtered_clusters[current_cluster]), 'status'] =  'low_cn_flank_seq'
+            print ' '.join(filtered_clusters[current_cluster]) + " fq"
             del filtered_clusters[current_cluster]
 
     #again to remove < MIN_COPY_NUMBER elements
