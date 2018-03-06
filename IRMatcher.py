@@ -109,7 +109,7 @@ if args.task == 'all' or args.task == 'candidates':
     candidates = {}
 
     for i in range(args.workers):
-        worker = Thread(target=findir.findIR, args=(q,args,l_lock, irs, perc_seq, last_perc_seq))
+        worker = Thread(target=findir.findIR, args=(q,args,l_lock, candidates, perc_seq, last_perc_seq))
         worker.setDaemon(True)
         worker.start()
     windows_size = MITE_MAX_LEN * 2
@@ -151,66 +151,28 @@ if args.task == 'all' or args.task == 'candidates':
     #In case of unprocessed sequences are left, let's wait
     q.join()
 
-    makelog("Search for nested elements")
 
     #labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length','candidate_id','status','cluster']
-    df = pd.DataFrame.from_records(candidates)#, columns=labels)
-    makelog("Initial candidates: " + str(len(df)))
-    makelog(cur_time())
-    #filter out nested (keep larger)
-#    l=[]
-#    for idx, row in df.iterrows():
-        #filter all that are nested into this
-#        res = df[(df.record == row.record) & (df.start + row.ir_length >= row.start) & (df.end  - row.ir_length <= row.end) & (df.index != idx) ]
-#        print res
-#        if len(res) > 0:
-#             import ipdb; ipdb.set_trace()
-#        df.drop(res.index,inplace=True)
-        #res = df[(df.record == row.record) & (df.start >= row.start) & (df.end <= row.end ) & (df.index != idx) ]
-        #l.append(res)
-#    if l:
-#        res = pd.concat(l)
-    makelog("Valid candidates (not nested): " + str(len(df)))
-    makelog(cur_time())
-    count = 1
-  
-    """
-    fs_seqs = []
-    irs_seqs = []
-    df = df.sort_values(by=['record','start','end'])
-    count = 1
-    #positions = {}
-    for index, row in df.iterrows():
-        name = 'MITE_CAND_' + str(count)
-        #positions[name] = (row.start, row.end)
-        df.loc[index, 'candidate_id'] = name
-        #append sequence record for biopython
-        params = (row.record, row.start, row.end, row.tsd, row.tsd_in, row.len, row.ir_1, row.ir_2)
-        description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i IR_1:%s IR_2:%s " % (params)
-        ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
-        irs_seqs.append(ir_seq_rec)
-        count += 1
-    makelog("Writing candidates sequences")
-    #SeqIO.write(irs_seqs, file_candidates_fasta , "fasta")
-    df.to_csv(file_candidates_csv, index=False)
-    makelog(cur_time())"""
-#    df.to_csv(file_candidates_csv, index=False)
+    total_candidates = {}
     count = 0
-    positions = {}
     irs_seqs = []
-    df = df.sort_values('start')
-    for index, row in df.iterrows():
-        name = 'MITE_CAND_' + str(count)
-        
-        params = (row.record, row.start, row.end, row.tsd, row.tsd_in, row.len)
-        description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i" % (params)
-        ir_seq_rec = SeqRecord(Seq(row.seq), id=name, description = description)
-        irs_seqs.append(ir_seq_rec)
-
-        df.loc[index, 'candidate_id'] = name
-        positions[name] = (row.start, row.end)
-        count += 1
+    for part in candidates.values():
+        for candidate in part:
+            #organize and name
+            name = 'MITE_CAND_%i' % (count,)
+            count += 1
+            candidate['candidate_id'] = name
+            total_candidates[name] = candidate
+            #record
+            params = (candidate['record'], candidate['start'], candidate['end'], candidate['tsd'], candidate['tsd_in'], candidate['len'])
+            description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i" % (params)
+            ir_seq_rec = SeqRecord(Seq(candidate['seq']), id=candidate['candidate_id'], description=description)
+            irs_seqs.append(ir_seq_rec)
+    df = pd.DataFrame(total_candidates)
+    makelog("Candidates: " + str(count))
+    #write candidate fasta
     SeqIO.write(irs_seqs, file_names['file_candidates_fasta'] , "fasta")
+    #write candidates csv
     df.to_csv(file_names['file_candidates_csv'], index=False)
 
 if args.task == 'cluster':
@@ -226,11 +188,11 @@ if args.task == 'cluster':
 if args.task == 'all' or args.task == 'cluster':
     if args.cluster_method == 'split':
         import cdhitcluster_split
-        cdhitcluster_split.cluster(file_names, positions, args.min_copy_number, df, args.FSL)
+        cdhitcluster_split.cluster(file_names, total_candidates, args.min_copy_number, args.FSL)
     if args.cluster_method == 'single':
         import cdhitcluster_single
-        cdhitcluster_single.cluster(file_names, positions, args.min_copy_number, df, args.FSL)
+        cdhitcluster_single.cluster(file_names, total_candidates, args.min_copy_number, args.FSL)
     if args.cluster_method == 'vsearch':
         import vsearchcluster
-        vsearchcluster.cluster(file_names, positions, args.min_copy_number, df, args.FSL)
+        vsearchcluster.cluster(file_names, total_candidates, args.min_copy_number, args.FSL)
 makelog(cur_time())

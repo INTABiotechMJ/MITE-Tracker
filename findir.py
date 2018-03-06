@@ -25,9 +25,7 @@ def makelog(stri, do_print=True):
         print(stri)
     logging.debug(stri)
 
-tir_positions = {}
 def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
-    global tir_positions
     while True:
         try:
             seq, seq_fs, split_index, record_id, seq_len, count = q.get(timeout=5)
@@ -173,37 +171,37 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                 'tir2_seq': seq_q_prime,
                 'tsd': tsd_one,
                 'tsd_in': tsd_in,
-                'fs_l': flanking_seq_left,
-                'fs_r': flanking_seq_right,
+                'fs_left': flanking_seq_left,
+                'fs_right': flanking_seq_right,
                 'len': length,
-                'cand_id': '',
-                'status': 'unfiltered',
-                'cluster': ''
             }
             with l_lock:
+                index = "%s_%i" % (record_id, (count)) 
                 #we don't want overlapped TIRs, save the broader
                 is_nested = False
                 has_nested = False
                 for curr_count in range(count - 1, count + 2):
-                    #print 'curr_count', curr_count
-                    index = "%s_%i" % (record_id, (curr_count)) 
-                    if index in candidates:
-                        for candidate in candidates[index]:
-                            # if new element TIR is nested in other TIR
-                            if new_element['start'] >= candidate['tir1_start'] and
-                                new_element['start'] <= candidate['tir1_end'] and
-                                new_element['end'] >= candidate['tir2_start'] and
+                    curr_index = "%s_%i" % (record_id, (curr_count)) 
+                    if curr_index in candidates:
+                        for candidate in candidates[curr_index]:
+                            #if new element TIR is nested in other TIR
+                            if new_element['start'] >= candidate['tir1_start'] and \
+                                new_element['start'] <= candidate['tir1_end'] and \
+                                new_element['end'] >= candidate['tir2_start'] and \
                                 new_element['end'] <= candidate['tir2_end']:
                                 is_nested = True
-
-                            if candidate['start'] >= new_element['tir1_start'] and
-                                candidate['start'] <= new_element['tir1_end'] and
-                                candidate['end'] >= new_element['tir2_start'] and
+                            #if other element is nested inside new element TIR
+                            if candidate['start'] >= new_element['tir1_start'] and \
+                                candidate['start'] <= new_element['tir1_end'] and \
+                                candidate['end'] >= new_element['tir2_start'] and \
                                 candidate['end'] <= new_element['tir2_end']:
                                 has_nested = True
-
-                    tir_positions[index].append((mite_start_full, mite_start_full + length))
-
+                                candidates[curr_index].remove(candidate)
+                if has_nested or not is_nested:
+                    if not index in candidates:
+                        candidates[index] = []
+                    candidates[index].append(new_element)
+                        
             curr_perc = split_index * 100 / seq_len
 
             if not record_id in perc_seq or not record_id in last_perc_seq:
