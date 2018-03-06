@@ -31,7 +31,6 @@ parser.add_argument("--FSL", help="Flanking seq length for comparison", type=int
 parser.add_argument("--min_copy_number", help="Minimum CN for families", type=int, default=3)
 parser.add_argument("--task", help="Task: all|candidates|cluster (default=all)", default='all')
 parser.add_argument("--cluster_method", help="Method: split|single|vsearch", default='single')
-
 args = parser.parse_args()#pylint: disable=invalid-name
 
 
@@ -68,13 +67,10 @@ logging.basicConfig(
     format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
 
 MITE_MAX_LEN = args.mite_max_len
-align_min_len = args.align_min_len
 MIN_TSD_LEN = args.tsd_min_len
 MAX_TSD_LEN = args.tsd_max_len
 MITE_MIN_LEN = args.mite_min_len
-
 start_time = time.time()
-
 
 def makelog(stri, do_print=True):
     if do_print:
@@ -136,8 +132,8 @@ if args.task == 'all' or args.task == 'candidates':
         split_index = MAX_TSD_LEN + args.FSL
         clean_seq = ''.join(str(record.seq).splitlines())
         seq_len = len(clean_seq)
-        params = (record.id, seq_len, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
-        makelog("Adding %s (len %i) %i/%i (%i%% of total sequences in %s)" % params)
+        params = (record.id, record_count , seqs_count, (record_count * 100 / seqs_count), cur_time() )
+        makelog("Adding %s %i/%i (%i%% of total sequences in %s)" % params)
         while split_index < seq_len - MAX_TSD_LEN - args.FSL:
             seq = clean_seq[split_index:split_index + windows_size]
             seq_fs = clean_seq[split_index - args.FSL :split_index + windows_size + args.FSL]
@@ -174,11 +170,11 @@ if args.task == 'all' or args.task == 'candidates':
             candidate['description'] = description
             ir_seq_rec = SeqRecord(Seq(candidate['seq']), id=candidate['candidate_id'], description=description)
             irs_seqs.append(ir_seq_rec)
-    df = pd.DataFrame(total_candidates)
     makelog("Candidates: " + str(count))
     #write candidate fasta
     SeqIO.write(irs_seqs, file_names['file_candidates_fasta'] , "fasta")
     #write candidates csv
+    df = pd.DataFrame(total_candidates.values())
     df.to_csv(file_names['file_candidates_csv'], index=False)
 
 if args.task == 'cluster':
