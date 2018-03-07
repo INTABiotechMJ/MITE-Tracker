@@ -152,6 +152,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 score_l1rc_r2 = pairwise2.align.localms(fs_left_1_rc, fs_right_2, 1, -1, -1, -1,score_only=True)
                 score_r1rc_l2 = pairwise2.align.localms(fs_right_1_rc, fs_left_2, 1, -1, -1, -1,score_only=True)
                 #get max score
+                #max_score = max(score_r1_r2,score_l1_l2)
                 max_score = max(score_r1_r2,score_l1_l2,score_l1rc_r2,score_r1rc_l2)
                 if max_score == []:
                     max_score = 0
