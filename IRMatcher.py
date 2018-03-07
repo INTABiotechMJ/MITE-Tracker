@@ -192,5 +192,5 @@ if args.task == 'all' or args.task == 'cluster':
         cdhitcluster_single.cluster(file_names, total_candidates, args.min_copy_number, args.FSL)
     if args.cluster_method == 'vsearch':
         import vsearchcluster
-        vsearchcluster.cluster(file_names, total_candidates, args.min_copy_number, args.FSL)
+        vsearchcluster.cluster(file_names, total_candidates, args.min_copy_number, args.FSL, args.workers)
 makelog(cur_time())

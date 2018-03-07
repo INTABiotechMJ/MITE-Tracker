@@ -70,7 +70,7 @@ def cluster2seq(cluster_dic, candidates, outfile):
     # close the filtered results file
     filter_file.close()
 
-def cluster(file_names, candidates, min_copy_number, FSL):
+def cluster(file_names, candidates, min_copy_number, FSL, workers):
     from Bio.SeqRecord import SeqRecord
     from Bio.Seq import Seq
     from Bio import SeqIO
@@ -83,7 +83,7 @@ def cluster(file_names, candidates, min_copy_number, FSL):
     cmd_list = [
     './vsearch-2.7.1/bin/vsearch',
     '--cluster_fast',file_names['file_candidates_fasta'],
-    '--threads','2',
+    '--threads',str(workers),
     '--strand','both',
     #'--centroids',centroids_candidates_file,
     '--clusters',file_names['file_temp_cluster'],
