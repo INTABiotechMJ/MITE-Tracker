@@ -61,7 +61,7 @@ def cluster2seq(cluster_dic, candidates, outfile):
     for cluster_id, cluster_seqs in cluster_dic.items():
         for seq_id in cluster_seqs:
             cand_id, description, sequence = candidates[seq_id]['candidate_id'], candidates[seq_id]['description'],candidates[seq_id]['seq']
-            header = ">%s %s FAMILY: %s" % (cand_id, description, str(family_number)) 
+            header = ">%s %s FAMILY:%s" % (cand_id, description, str(family_number)) 
             if not cluster_id == last_cluster:
                 filter_file.write('{0}\n'.format('-'*10))
                 last_cluster = cluster_id
@@ -132,8 +132,8 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         for seq_id in combinations:
             x,y = seq_id
 
-            if not x in candidates or not y in candidates:
-                continue
+            #if not x in candidates or not y in candidates:
+            #    continue
             cand_x = candidates[x]
             cand_y = candidates[y]
 
@@ -149,20 +149,36 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             
             score_r1_r2 = pairwise2.align.localms(fs_right_1, fs_right_2, 1, -1, -1, -1,score_only=True)
             score_l1_l2 = pairwise2.align.localms(fs_left_1, fs_left_2, 1, -1, -1, -1,score_only=True)
+
+            fs_left_1_rc = Seq(fs_left_1).reverse_complement()
+            fs_right_1_rc = Seq(fs_right_1).reverse_complement()
+
+            score_l1rc_r2 = pairwise2.align.localms(fs_left_1_rc, fs_right_2, 1, -1, -1, -1,score_only=True)
+            score_r1rc_l2 = pairwise2.align.localms(fs_right_1_rc, fs_left_2, 1, -1, -1, -1,score_only=True)
+
             #score_r1_l2 = pairwise2.align.localms(fs_right_1, fs_left_2, 1, -1, -1, -1,score_only=True)
             #score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 1, -1, -1, -1,score_only=True)
             #max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
-            max_score = max(score_r1_r2,score_l1_l2)
+
+            max_score = max(score_r1_r2,score_l1_l2,score_l1rc_r2,score_r1rc_l2)
+            #max_score = max(score_r1_r2,score_l1_l2)
 
             if max_score == []:
                 max_score = 0
             max_score /= FSL
-            #todo validate scoring
             if max_score < 0.5:
                 dist_fs[x] = 1
                 dist_fs[y] = 1
+            
+            #print cand_x['candidate_id'], 
+            #print cand_y['candidate_id'], max_score
+
             if len(dist_fs) >= min_copy_number:
                 break
+
+        #if len(dist_fs) >= min_copy_number:
+        #import ipdb; ipdb.set_trace()
+
         if len(dist_fs) < min_copy_number:
             #df.loc[df['candidate_id'].isin(filtered_clusters[current_cluster]), 'status'] =  'low_cn_flank_seq'
             #print ' '.join(filtered_clusters[current_cluster]) + " fq"

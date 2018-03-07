@@ -147,6 +147,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                 continue
 
             ir_seq = seq_fs[mite_pos_one:mite_pos_two]
+            #ir_seq = seq_fs[mite_pos_one - args.FSL:mite_pos_two + args.FSL]
             ir_len = mite_pos_two - mite_pos_one
 
             fs_start = max(0,mite_pos_one - args.FSL)
@@ -164,7 +165,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                 'end': mite_end_full, 
                 'seq': ir_seq, 
                 'record': record_id, 
-                'ir_len': ir_len, 
+                'mite_len': ir_len, 
                 'tir1_start': mite_start_full,
                 'tir1_end': mite_start_full + length,
                 'tir2_start': mite_end_full - length,
@@ -175,7 +176,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                 'tsd_in': tsd_in,
                 'fs_left': flanking_seq_left,
                 'fs_right': flanking_seq_right,
-                'len': length,
+                'tir_len': length,
             }
             with l_lock:
                 index = "%s_%i" % (record_id, (count)) 

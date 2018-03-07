@@ -165,8 +165,8 @@ if args.task == 'all' or args.task == 'candidates':
             candidate['candidate_id'] = name
             total_candidates[name] = candidate
             #record
-            params = (candidate['record'], candidate['start'], candidate['end'], candidate['tsd'], candidate['tsd_in'], candidate['ir_len'])
-            description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i" % (params)
+            params = (candidate['record'], candidate['start'], candidate['end'], candidate['tsd'], candidate['tsd_in'], candidate['mite_len'],candidate['tir_len'])
+            description = "SEQ:%s START:%i END:%i TSD:%s TSD_IN:%s MITE_LEN:%i TIR_LEN:%i" % (params)
             candidate['description'] = description
             ir_seq_rec = SeqRecord(Seq(candidate['seq']), id=candidate['candidate_id'], description=description)
             irs_seqs.append(ir_seq_rec)
