@@ -61,7 +61,7 @@ def cluster2seq(cluster_dic, candidates, outfile):
     for cluster_id, cluster_seqs in cluster_dic.items():
         for seq_id in cluster_seqs:
             cand_id, description, sequence = candidates[seq_id]['candidate_id'], candidates[seq_id]['description'],candidates[seq_id]['seq']
-            header = ">%s %s family: %s" % (cand_id, description, str(family_number)) 
+            header = ">%s %s FAMILY: %s" % (cand_id, description, str(family_number)) 
             if not cluster_id == last_cluster:
                 filter_file.write('{0}\n'.format('-'*10))
                 last_cluster = cluster_id
@@ -138,8 +138,8 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             cand_y = candidates[y]
 
             #if they're partially overlapped, ignore flanking sequence comparison
-            if cand_x['end'] >= cand_y['start'] and cand_y['end'] >= cand_x['start']:
-                continue
+            #if cand_x['end'] >= cand_y['start'] and cand_y['end'] >= cand_x['start']:
+            #    continue
 
             fs_right_1 = cand_x['fs_right']
             fs_left_1 = cand_x['fs_left']
