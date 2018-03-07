@@ -127,54 +127,59 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         #search candidates for that cluster
         #all possible 2-combinations of candidates
         candidates_in_cluster = filtered_clusters[current_cluster]
-        sum_diff_fs_cluster = 0
-        for cand_x in candidates_in_cluster:
-            totally_different_fs = True
-            for cand_y in candidates_in_cluster:
-                if cand_x['candidate_id'] == cand_y['candidate_id']:
-                    continue
+        combinations = [(x,y) for x,y in itertools.combinations(candidates_in_cluster, 2)]
+        dist_fs = {}
+        for seq_id in combinations:
+            x,y = seq_id
 
-                fs_right_1 = cand_x['fs_right']
-                fs_left_1 = cand_x['fs_left']
+            #if not x in candidates or not y in candidates:
+            #    continue
+            cand_x = candidates[x]
+            cand_y = candidates[y]
 
-                fs_right_2 = cand_y['fs_right']
-                fs_left_2 = cand_y['fs_left']
-                
-                score_r1_r2 = pairwise2.align.localms(fs_right_1, fs_right_2, 1, -1, -1, -1,score_only=True)
-                score_l1_l2 = pairwise2.align.localms(fs_left_1, fs_left_2, 1, -1, -1, -1,score_only=True)
+            #if they're partially overlapped, ignore flanking sequence comparison
+            #if cand_x['end'] >= cand_y['start'] and cand_y['end'] >= cand_x['start']:
+            #    continue
 
-                fs_left_1_rc = Seq(fs_left_1).reverse_complement()
-                fs_right_1_rc = Seq(fs_right_1).reverse_complement()
+            fs_right_1 = cand_x['fs_right']
+            fs_left_1 = cand_x['fs_left']
 
-                score_l1rc_r2 = pairwise2.align.localms(fs_left_1_rc, fs_right_2, 1, -1, -1, -1,score_only=True)
-                score_r1rc_l2 = pairwise2.align.localms(fs_right_1_rc, fs_left_2, 1, -1, -1, -1,score_only=True)
+            fs_right_2 = cand_y['fs_right']
+            fs_left_2 = cand_y['fs_left']
+            
+            score_r1_r2 = pairwise2.align.localms(fs_right_1, fs_right_2, 1, -1, -1, -1,score_only=True)
+            score_l1_l2 = pairwise2.align.localms(fs_left_1, fs_left_2, 1, -1, -1, -1,score_only=True)
 
-                #score_r1_l2 = pairwise2.align.localms(fs_right_1, fs_left_2, 1, -1, -1, -1,score_only=True)
-                #score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 1, -1, -1, -1,score_only=True)
-                #max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
+            fs_left_1_rc = Seq(fs_left_1).reverse_complement()
+            fs_right_1_rc = Seq(fs_right_1).reverse_complement()
 
-                max_score = max(score_r1_r2,score_l1_l2,score_l1rc_r2,score_r1rc_l2)
-                #max_score = max(score_r1_r2,score_l1_l2)
+            score_l1rc_r2 = pairwise2.align.localms(fs_left_1_rc, fs_right_2, 1, -1, -1, -1,score_only=True)
+            score_r1rc_l2 = pairwise2.align.localms(fs_right_1_rc, fs_left_2, 1, -1, -1, -1,score_only=True)
 
-                if max_score == []:
-                    max_score = 0
-                max_score /= FSL
-                
-                if max_score > 0.5:
-                    totally_different_fs = False
-                    break
+            #score_r1_l2 = pairwise2.align.localms(fs_right_1, fs_left_2, 1, -1, -1, -1,score_only=True)
+            #score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 1, -1, -1, -1,score_only=True)
+            #max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
+
+            max_score = max(score_r1_r2,score_l1_l2,score_l1rc_r2,score_r1rc_l2)
+            #max_score = max(score_r1_r2,score_l1_l2)
+
+            if max_score == []:
+                max_score = 0
+            max_score /= FSL
+            if max_score < 0.5:
+                dist_fs[x] = 1
+                dist_fs[y] = 1
             
             #print cand_x['candidate_id'], 
             #print cand_y['candidate_id'], max_score
-            if totally_different_fs:
-                sum_diff_fs_cluster += 1
-            if sum_diff_fs_cluster >= min_copy_number:
+
+            if len(dist_fs) >= min_copy_number:
                 break
 
-            #if len(dist_fs) >= min_copy_number:
-            #import ipdb; ipdb.set_trace()
+        #if len(dist_fs) >= min_copy_number:
+        #import ipdb; ipdb.set_trace()
 
-        if sum_diff_fs_cluster < min_copy_number:
+        if len(dist_fs) < min_copy_number:
             #df.loc[df['candidate_id'].isin(filtered_clusters[current_cluster]), 'status'] =  'low_cn_flank_seq'
             #print ' '.join(filtered_clusters[current_cluster]) + " fq"
             makelog(' '.join(filtered_clusters[current_cluster]) + " filtered by flanking sequence")
