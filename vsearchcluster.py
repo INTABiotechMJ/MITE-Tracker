@@ -24,10 +24,12 @@ def filtercluster(cluster_dic, minimum, candidates):
         if len(cluster_dic[cluster]) >= minimum:
             #group into overlapped (overlapped groups count as one individual)
             #ie should have more than minimum elements non overlapped
-            cluster_candidates = [v for k,v in candidates.items() if k in cluster_dic[cluster]]
             cluster_positions = []
-            for candidate in cluster_candidates:
-                cluster_positions.append( (candidate['start'], candidate['end']) )
+            for k in cluster_dic[cluster]:   
+                cluster_positions.append( (candidates[k]['start'], candidates[k]['end']) )
+            #cluster_candidates = [v for k,v in candidates.items() if k in cluster_dic[cluster]]
+            #for candidate in cluster_candidates:
+            #    cluster_positions.append( (candidate['start'], candidate['end']) )
             merged_overlaped = merge_overlap(cluster_positions)
             if len(merged_overlaped) >= minimum:
                 filtered_dic[cluster] = cluster_dic[cluster]
@@ -109,6 +111,7 @@ def cluster(file_names, candidates, min_copy_number, FSL):
                         clusters_dic[fn].append(id_seq)
                     else:
                         clusters_dic[fn] = [id_seq]
+            fh.close()
     #        os.unlink(file_names['file_temp_cluster_dir'] + fn)
     #        if n < args.min_copy_number:
     #            df.loc[df['candidate_id'] == 'id_seq', 'status'] =  'low_cn'
@@ -145,9 +148,10 @@ def cluster(file_names, candidates, min_copy_number, FSL):
             
             score_r1_r2 = pairwise2.align.localms(fs_right_1, fs_right_2, 1, -1, -1, -1,score_only=True)
             score_l1_l2 = pairwise2.align.localms(fs_left_1, fs_left_2, 1, -1, -1, -1,score_only=True)
-            score_r1_l2 = pairwise2.align.localms(fs_right_1, fs_left_2, 1, -1, -1, -1,score_only=True)
-            score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 1, -1, -1, -1,score_only=True)
-            max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
+            #score_r1_l2 = pairwise2.align.localms(fs_right_1, fs_left_2, 1, -1, -1, -1,score_only=True)
+            #score_r2_l1 = pairwise2.align.localms(fs_right_2, fs_left_1, 1, -1, -1, -1,score_only=True)
+            #max_score = max(score_r1_r2,score_l1_l2,score_r1_l2,score_r2_l1)
+            max_score = max(score_r1_r2,score_l1_l2)
 
             if max_score == []:
                 max_score = 0
@@ -156,9 +160,11 @@ def cluster(file_names, candidates, min_copy_number, FSL):
             if max_score < 0.5:
                 dist_fs[x] = 1
                 dist_fs[y] = 1
+            if len(dist_fs) >= min_copy_number:
+                break
         if len(dist_fs) < min_copy_number:
             #df.loc[df['candidate_id'].isin(filtered_clusters[current_cluster]), 'status'] =  'low_cn_flank_seq'
-            print ' '.join(filtered_clusters[current_cluster]) + " fq"
+            #print ' '.join(filtered_clusters[current_cluster]) + " fq"
             del filtered_clusters[current_cluster]
 
     #again to remove < MIN_COPY_NUMBER elements
