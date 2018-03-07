@@ -77,7 +77,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
     from Bio import pairwise2
     from subprocess import Popen, PIPE
     from collections import OrderedDict
-    import os
+    import os, shutil
 
     makelog("Clustering")
     cmd_list = [
@@ -112,6 +112,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                     else:
                         clusters_dic[fn] = [id_seq]
             fh.close()
+    shutil.rmtree(file_names['file_temp_cluster_dir'])
     #        os.unlink(file_names['file_temp_cluster_dir'] + fn)
     #        if n < args.min_copy_number:
     #            df.loc[df['candidate_id'] == 'id_seq', 'status'] =  'low_cn'
@@ -165,6 +166,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         if len(dist_fs) < min_copy_number:
             #df.loc[df['candidate_id'].isin(filtered_clusters[current_cluster]), 'status'] =  'low_cn_flank_seq'
             #print ' '.join(filtered_clusters[current_cluster]) + " fq"
+            makelog(' '.join(filtered_clusters[current_cluster]) + " filtered by flanking sequence")
             del filtered_clusters[current_cluster]
 
     #again to remove < MIN_COPY_NUMBER elements
