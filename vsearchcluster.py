@@ -61,6 +61,7 @@ def cluster2seq(cluster_dic, candidates, outfile):
     for cluster_id, cluster_seqs in cluster_dic.items():
         for seq_id in cluster_seqs:
             cand_id, description, sequence = candidates[seq_id]['candidate_id'], candidates[seq_id]['description'],candidates[seq_id]['seq']
+            new_id = "MITE_%s|%s|%s|%s"
             header = ">%s %s FAMILY:%s" % (cand_id, description, str(family_number)) 
             if not cluster_id == last_cluster:
                 filter_file.write('{0}\n'.format('-'*10))
