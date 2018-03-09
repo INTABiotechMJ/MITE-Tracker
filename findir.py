@@ -50,7 +50,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
         '-reward','2',
         #'-max_target_seqs','1',
         '-penalty','-4',
-        '-word_size','7',
+        '-word_size','6',
         #'-ungapped',
         #'-evalue','140',
         '-strand','plus',

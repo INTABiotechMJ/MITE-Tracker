@@ -57,17 +57,17 @@ def cluster2seq(cluster_dic, candidates, outfile):
     filter_file = open(outfile, 'w')
     # loop through the sequence list
     last_cluster = None
-    family_number = 1
+    #family_number = 1
     for cluster_id, cluster_seqs in cluster_dic.items():
         for seq_id in cluster_seqs:
-            cand_id, description, sequence = candidates[seq_id]['candidate_id'], candidates[seq_id]['description'],candidates[seq_id]['seq']
-            new_id = "MITE_%s|%s|%s|%s"
-            header = ">%s %s FAMILY:%s" % (cand_id, description, str(family_number)) 
+            cand_id, description, sequence = candidates[seq_id]['id'], candidates[seq_id]['description'],candidates[seq_id]['seq']
+            #header = ">%s %s FAMILY:%s" % (cand_id, description, str(family_number)) 
+            header = ">%s %s" % (cand_id, description) 
             if not cluster_id == last_cluster:
                 filter_file.write('{0}\n'.format('-'*10))
                 last_cluster = cluster_id
             filter_file.write('{0}\n{1}\n'.format(header, '\n'.join([sequence[i:i+60] for i in range(0, len(sequence), 60)])))
-        family_number += 1
+        #family_number += 1
     # close the filtered results file
     filter_file.close()
 
@@ -173,14 +173,23 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
 
     #again to remove < MIN_COPY_NUMBER elements
     #filtered_clusters = filtercluster(filtered_clusters, args.min_copy_number, positions, df, 'low_copy_number_2')
-#    ordered_cluster = OrderedDict(sorted(filtered_clusters.items(), key=lambda t: t[1]))
+    ordered_cluster = OrderedDict(sorted(filtered_clusters.items(), key=lambda t: t[0]))
 
     makelog("Clusters: " + str(len(filtered_clusters)))
     buffer_rec = []
-    for candidate in candidates.values():
-        for clus, seqs in filtered_clusters.items():
-            if candidate['candidate_id'] in seqs:
-                record = SeqRecord(Seq(candidate['seq']), id=candidate['candidate_id'], description=candidate['description'])
-                buffer_rec.append(record)
+    #import ipdb; ipdb.set_trace()
+    #for candidate in candidates.values():
+    count = 1
+    family_number = 1#ordered_cluster.keys().index(clus)
+    for clus, seqs in ordered_cluster.items():
+    #if candidate['candidate_id'] in seqs:
+        for seq in seqs:
+            candidate = candidates[seq]
+            candidate['id'] = "MITE_T_%s|%s|%s|%s|%s|F%s" % (str(count),candidate['record'],candidate['start'],candidate['end'],candidate['tsd'],family_number)
+            candidate['description'] = "%s CANDIDATE_ID:%s" % (candidate['description'], candidate['candidate_id'].split('|')[0])
+            record = SeqRecord(Seq(candidate['seq']), id=candidate['id'], description=candidate['description'])
+            buffer_rec.append(record)
+            count += 1
+        family_number += 1
     SeqIO.write(buffer_rec, file_names['all_file'] , "fasta")
     cluster2seq(filtered_clusters, candidates, file_names['families_file'])
