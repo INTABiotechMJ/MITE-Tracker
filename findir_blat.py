@@ -1,0 +1,244 @@
+from Bio.Seq import Seq
+from Bio.SeqUtils.lcc import lcc_simp
+from Bio.SeqRecord import SeqRecord
+from Bio import SeqIO
+from subprocess import Popen, PIPE
+import os
+import Queue
+import logging
+
+def has_overlapped(tir_start, tir_end, tir_positions, record_id, count):
+    for curr_count in range(count - 1, count + 2):
+        print 'curr_count', curr_count
+        index = "%s_%i" % (record_id, (curr_count)) 
+        print 'index', index
+        if index in tir_positions:
+            for tir in tir_positions[index]:
+                print 'tir', tir
+                other_start, other_end = tir
+                if tir_start >= other_start and tir_end <= other_end:
+                    return True
+    return False
+
+def makelog(stri, do_print=True):
+    if do_print:
+        print(stri)
+    logging.debug(stri)
+
+def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
+    while True:
+        try:
+            seq, seq_fs, split_index, record_id, seq_len, count = q.get(timeout=5)
+        except Queue.Empty:
+            break
+        splited_len = len(seq)
+        seq_rc = str(Seq(seq).reverse_complement())
+        complexity = lcc_simp(seq)
+        if complexity < 1:
+            q.task_done()
+            continue
+        record_q = SeqRecord(Seq(seq), id = record_id)
+        record_s = SeqRecord(Seq(seq_rc), id = record_id + "_rc")
+        query_filename = "tmp/query" + str(record_id + "_" + str(split_index))+".tmp"
+        subject_filename = "tmp/subject" + str(record_id + "_" + str(split_index))+".tmp"
+        result_filename = "tmp/res" + str(record_id + "_" + str(split_index))+".tmp"
+        SeqIO.write(record_q, query_filename, "fasta")
+        SeqIO.write(record_s, subject_filename, "fasta")
+        cmd_list = [
+        './dev/blat',
+        query_filename,
+        subject_filename,
+        '-out=blast8',
+#        '-oneOff=1',
+        '-minScore=0',
+        '-minIdentity=0',
+        '-tileSize=6',
+        '-repMatch=1000000',
+        result_filename]
+        #'-query','<(echo ">q"; echo "' + seq + '";)',
+        #'-subject','<(echo ">s"; echo "' + seq_rc + '";)',
+        #'-reward','2',
+        #'-max_target_seqs','1',
+        #'-penalty','-4',
+        #'-word_size','7',
+        #'-ungapped',
+        #'-evalue','140',
+        #'-strand','plus',
+        #'-soft_masking','false',
+        #'-dust','no',
+        #'-outfmt',"6 sstart send qstart qend score length mismatch gaps gapopen nident"]
+        #cmd = " ".join(cmd_list)
+        p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
+        out,err = p.communicate()
+        if err:
+            print err
+        fi = open(result_filename)
+        lines = fi.readlines()
+        fi.close()
+        os.remove(query_filename)
+        os.remove(subject_filename)
+        os.remove(result_filename)
+        #if err:
+        #    print(split_index, record_id,seq_len)
+        #    makelog("BLASTN error: %s" % (err, ) )
+        #else:
+        #    os.remove(query_filename)
+        #    os.remove(subject_filename)
+        #lines = out.splitlines()
+        #lines = os.system(cmd)
+        for row in lines:
+            #import ipdb; ipdb.set_trace()
+            row = row.split("\t")
+            if len(row) < 9:
+                continue
+            sstart = int(row[8])
+            send = int(row[9])
+            qstart = int(row[6])
+            qend = int(row[7])
+            score = int(row[4])
+            length = int(row[3])
+            mismatch = int(row[4])
+            gaps = int(row[5])
+
+            #filter valids IR
+            if length < args.align_min_len:
+                continue
+            #subject transform cause it was reversed
+            sstart = splited_len - sstart 
+            send = splited_len - send
+            
+            #obtain IR sequences
+            seq_q = seq[qstart:qend]
+            seq_q_prime = seq[send:sstart]
+
+            qstart, qend = min(qstart, qend),max(qstart, qend)
+            sstart, send = min(sstart, send),max(sstart, send)
+
+            #do not allow overlaped IRs
+            if qend >= sstart and send >= qstart:
+                continue
+
+            #organice positions
+            ir_start = min(qstart,qend,sstart,send)
+            ir_end = max(qstart,qend,sstart,send)
+            #calculate length
+            ir_len = ir_end - ir_start
+            #length constraints
+            if ir_len > args.mite_max_len:
+                continue
+            if ir_len < args.mite_min_len:
+                continue
+            #move in genome, split index
+            #ir_seq = seq[ir_start:ir_end]
+
+            #again validate complexity, a value of 1 means only two different nucleotides are present
+            if lcc_simp(seq_q.upper()) <= 1.2:
+                continue
+
+            if lcc_simp(seq_q_prime.upper()) <= 1.2:
+                continue
+
+            #validate TSD outside TIRs
+            i = args.tsd_max_len
+            valid_tsd = False
+            while i >= args.tsd_min_len:
+                tsd_one = seq_fs[ir_start - i + args.FSL:ir_start + args.FSL]
+                tsd_two = seq_fs[ir_end + args.FSL:ir_end + i + args.FSL]
+                if tsd_one.lower() == tsd_two.lower():
+                    valid_tsd = True
+                    mite_pos_one = ir_start - i + args.FSL
+                    mite_pos_two = ir_end + i + args.FSL
+                    tsd_in = 'no'
+                    break
+                i -= 1
+            #validate TSD inside TIRs
+            #TSDs cannot be a large part of TIRs
+            if not valid_tsd:
+                i = args.tsd_max_len
+                while i >= args.tsd_min_len:
+                    tsd_one = seq_fs[ir_start + args.FSL:ir_start + i + args.FSL]
+                    tsd_two = seq_fs[ir_end - i + args.FSL:ir_end + args.FSL]
+                    if tsd_one.lower() == tsd_two.lower():
+                        valid_tsd = True
+                        mite_pos_one = ir_start + args.FSL
+                        mite_pos_two = ir_end  + args.FSL
+                        tsd_in = 'yes'
+                        break
+                    i -= 1
+            #"no tsd"
+            if not valid_tsd:
+                continue
+
+            ir_seq = seq_fs[mite_pos_one:mite_pos_two]
+            #ir_seq = seq_fs[mite_pos_one - args.FSL:mite_pos_two + args.FSL]
+            ir_len = mite_pos_two - mite_pos_one
+
+            fs_start = max(0,mite_pos_one - args.FSL)
+            flanking_seq_left = seq_fs[fs_start:mite_pos_one]
+            flanking_seq_right = seq_fs[mite_pos_two:mite_pos_two + args.FSL]
+
+            #calculate positions in full sequence
+            mite_start_full = mite_pos_one + split_index - args.FSL 
+            mite_end_full = mite_pos_two + split_index - args.FSL
+            
+            #new_element = (mite_start_full, mite_end_full, ir_seq, record_id, ir_len, seq_q, seq_q_prime, tsd_one, tsd_in,flanking_seq_left,flanking_seq_right,length,'','unfiltered','')
+            new_element = {
+                'start': mite_start_full,
+                'end': mite_end_full, 
+                'end': mite_end_full, 
+                'seq': ir_seq, 
+                'record': record_id, 
+                'mite_len': ir_len, 
+                'tir1_start': mite_start_full,
+                'tir1_end': mite_start_full + length,
+                'tir2_start': mite_end_full - length,
+                'tir2_end': mite_end_full,
+                'tir1_seq': seq_q, 
+                'tir2_seq': seq_q_prime,
+                'tsd': tsd_one,
+                'tsd_in': tsd_in,
+                'fs_left': flanking_seq_left,
+                'fs_right': flanking_seq_right,
+                'tir_len': length,
+            }
+            with l_lock:
+                index = "%s_%i" % (record_id, (count)) 
+                #we don't want overlapped TIRs, save the broader
+                is_nested = False
+                has_nested = False
+                for curr_count in range(count - 1, count + 2):
+                    curr_index = "%s_%i" % (record_id, (curr_count)) 
+                    if curr_index in candidates:
+                        for candidate in candidates[curr_index]:
+                            #if new element TIR is nested in other TIR
+                            if new_element['start'] >= candidate['tir1_start'] and \
+                                new_element['start'] <= candidate['tir1_end'] and \
+                                new_element['end'] >= candidate['tir2_start'] and \
+                                new_element['end'] <= candidate['tir2_end']:
+                                is_nested = True
+                            #if other element is nested inside new element TIR
+                            if candidate['start'] >= new_element['tir1_start'] and \
+                                candidate['start'] <= new_element['tir1_end'] and \
+                                candidate['end'] >= new_element['tir2_start'] and \
+                                candidate['end'] <= new_element['tir2_end']:
+                                has_nested = True
+                                candidates[curr_index].remove(candidate)
+                if has_nested or not is_nested:
+                    if not index in candidates:
+                        candidates[index] = []
+                    candidates[index].append(new_element)
+                        
+            curr_perc = split_index * 100 / seq_len
+
+            if not record_id in perc_seq or not record_id in last_perc_seq:
+                perc_seq[record_id] = curr_perc
+                last_perc_seq[record_id] = curr_perc
+                makelog(record_id + " " + str(curr_perc) + "%")
+
+            if perc_seq[record_id] - last_perc_seq[record_id] >= 5:
+                makelog(record_id + " " + str(curr_perc) + "%")
+                last_perc_seq[record_id] = curr_perc
+
+            perc_seq[record_id] = curr_perc
+
+        q.task_done()

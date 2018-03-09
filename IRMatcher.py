@@ -119,7 +119,6 @@ if args.task == 'all' or args.task == 'candidates':
     #processes until certain amount of sequences
     #stablish a balance between memory usage and processing
     max_queue_size = 50
-    current_processing_size = 0
     #initialize global variables
     #start adding sequences to process queue
     record_count = 0
@@ -140,9 +139,7 @@ if args.task == 'all' or args.task == 'candidates':
             q.put((seq, seq_fs, split_index,record.id,seq_len,queue_count,))
             queue_count += 1
             split_index += MITE_MAX_LEN
-            current_processing_size += MITE_MAX_LEN
             if q.qsize() >= max_queue_size:
-                current_processing_size = 0
                 q.join()
                 processed = True
             #in order to avoid overloading of memory, we add a join()
