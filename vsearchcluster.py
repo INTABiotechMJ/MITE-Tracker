@@ -192,4 +192,4 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             count += 1
         family_number += 1
     SeqIO.write(buffer_rec, file_names['all_file'] , "fasta")
-    cluster2seq(filtered_clusters, candidates, file_names['families_file'])
+    cluster2seq(ordered_cluster, candidates, file_names['families_file'])
