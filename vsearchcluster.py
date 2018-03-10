@@ -147,6 +147,8 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 #some MITE could be at the end or begining of the sequence and this not having flanking sequence
                 if fs_left_1 == '' or fs_right_1 == '' or fs_right_2 == '' or fs_left_2 == '':
                     continue
+                if not is_instance(fs_left_1,basestring) or not is_instance(fs_right_1,basestring) or not is_instance(fs_right_2,basestring) == '' or is_instance(fs_left_2,basestring) == '':
+                    continue
                 fs_left_1_rc = Seq(fs_left_1).reverse_complement()
                 fs_right_1_rc = Seq(fs_right_1).reverse_complement()
                 
