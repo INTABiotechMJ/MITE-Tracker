@@ -144,6 +144,9 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 fs_left_1 = cand_x['fs_left']
                 fs_right_2 = cand_y['fs_right']
                 fs_left_2 = cand_y['fs_left']
+                #some MITE could be at the end or begining of the sequence and this not having flanking sequence
+                if fs_left_1 == '' or fs_left_1 == '' or fs_right_2 == '' or fs_left_2 == '':
+                    continue
                 fs_left_1_rc = Seq(fs_left_1).reverse_complement()
                 fs_right_1_rc = Seq(fs_right_1).reverse_complement()
                 

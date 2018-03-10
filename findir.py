@@ -7,19 +7,6 @@ import os
 import Queue
 import logging
 
-def has_overlapped(tir_start, tir_end, tir_positions, record_id, count):
-    for curr_count in range(count - 1, count + 2):
-        print 'curr_count', curr_count
-        index = "%s_%i" % (record_id, (curr_count)) 
-        print 'index', index
-        if index in tir_positions:
-            for tir in tir_positions[index]:
-                print 'tir', tir
-                other_start, other_end = tir
-                if tir_start >= other_start and tir_end <= other_end:
-                    return True
-    return False
-
 def makelog(stri, do_print=True):
     if do_print:
         print(stri)

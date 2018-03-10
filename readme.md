@@ -4,7 +4,7 @@ IRmatcher is efficient and easy to run tool for discovering Miniature Inverted r
 
 Large genomes can be executed in desktop computers.
 
-# Requirements (just follow how to install)
+# Requirements
  - tested in macOS 10.13.1, Debian 7.6, Ubuntu 16.04, Windows 7
  - ncbi blast+ (Nucleotide-Nucleotide BLAST 2.6.0+)
  - python requirements are in requirements.txt file (bipython and pandas)
@@ -43,7 +43,7 @@ python miteParser.py -g /path/to/your/genome.fasta -w 3 -j jobname
 nohup python -u miteParser.py -g /path/to/your/genome.fasta -w 3 -j jobname &
 ```
 
-In order to check the program output you can use these command (ctrl+c to exit)
+In order to check the output and progress you can use these command (ctrl+c to exit)
 ```
 #nohup will have the program output as well as the output from cdhit execution
 tail -f nohup.out
