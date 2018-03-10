@@ -9,48 +9,37 @@ Large genomes can be executed in desktop computers.
  - ncbi blast+ (Nucleotide-Nucleotide BLAST 2.6.0+)
  - python requirements are in requirements.txt file (bipython and pandas)
 
-# Install dependencies
+# Installation and running
 
-## Linux
+## 
 ```
-pip install -r requirements.txt
+# clone repo
+git clone https://juancresc@bitbucket.org/juancresc/irmatcher.git
+cd irmatcher
+
+# blast
 sudo apt-get install ncbi-blast+ virtualenv
-git clone https://github.com/weizhongli/cdhit.git
-cd cdhit/
+# for mac # brew install ncbi-blast+ virtualenv
+
+#vsearch
+wget https://github.com/torognes/vsearch/archive/v2.7.1.tar.gz
+tar xzf v2.7.1.tar.gz
+cd vsearch-2.7.1
+./autogen.sh
+./configure
 make
-```
 
-## macOS (OSx)
-```
-pip install -r requirements.txt
-
-brew install ncbi-blast+ virtualenv
-git clone https://github.com/weizhongli/cdhit.git
-cd cdhit/
-make openmp=no
-#as stated in https://entropicevolution.wordpress.com/2015/09/19/compiling-cd-hit-under-mac-osx-yosemite/
-
-```
-## Install python packages with virtualenv (recommended)
-```
+#python dependencies
 virtualenv venv
 source venv/bin/activate
 pip install -r requirements.txt
-```
 
-# How to run
+# running
 
-```
-python miteParser.py -g /path/to/your/genome.fasta -j jobname
-```
-
-Or specify -w for specify the number of threads to use
-```
 python miteParser.py -g /path/to/your/genome.fasta -w 3 -j jobname
-```
 
-To run in background
-```
+# or to run in background
+
 nohup python -u miteParser.py -g /path/to/your/genome.fasta -w 3 -j jobname &
 ```
 
