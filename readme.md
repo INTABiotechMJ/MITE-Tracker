@@ -19,7 +19,7 @@ cd irmatcher
 
 # blast
 sudo apt-get install ncbi-blast+ virtualenv
-# for mac # brew install ncbi-blast+ virtualenv
+# in macOS: brew install ncbi-blast+ virtualenv
 
 #vsearch
 wget https://github.com/torognes/vsearch/archive/v2.7.1.tar.gz
