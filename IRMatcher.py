@@ -30,7 +30,6 @@ parser.add_argument("--tsd_max_len", help="TSD max lenght", type=int, default=10
 parser.add_argument("--FSL", help="Flanking seq length for comparison", type=int, default=50)
 parser.add_argument("--min_copy_number", help="Minimum CN for families", type=int, default=3)
 parser.add_argument("--task", help="Task: all|candidates|cluster (default=all)", default='all')
-parser.add_argument("--cluster_method", help="Method: split|single|vsearch", default='vsearch')
 args = parser.parse_args()#pylint: disable=invalid-name
 
 
@@ -79,10 +78,6 @@ def makelog(stri, do_print=True):
 
 if not args.task in ('all', 'cluster', 'candidates'):
     makelog('task parameter not valid')
-    exit()
-
-if not args.cluster_method in ('split', 'single','vsearch'):
-    makelog('cluster parameter not valid')
     exit()
 
 def cur_time():
@@ -181,13 +176,6 @@ if args.task == 'cluster':
         total_candidates[row.candidate_id] = row.to_dict()
 
 if args.task == 'all' or args.task == 'cluster':
-    if args.cluster_method == 'split':
-        import cdhitcluster_split
-        cdhitcluster_split.cluster(file_names, total_candidates, args.min_copy_number, args.FSL)
-    if args.cluster_method == 'single':
-        import cdhitcluster_single
-        cdhitcluster_single.cluster(file_names, total_candidates, args.min_copy_number, args.FSL)
-    if args.cluster_method == 'vsearch':
-        import vsearchcluster
-        vsearchcluster.cluster(file_names, total_candidates, args.min_copy_number, args.FSL, args.workers)
+    import vsearchcluster
+    vsearchcluster.cluster(file_names, total_candidates, args.min_copy_number, args.FSL, args.workers)
 makelog(cur_time())

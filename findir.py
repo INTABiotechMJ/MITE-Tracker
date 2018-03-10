@@ -212,7 +212,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                 last_perc_seq[record_id] = curr_perc
                 makelog(record_id + " " + str(curr_perc) + "%")
 
-            if perc_seq[record_id] - last_perc_seq[record_id] >= 5:
+            if perc_seq[record_id] - last_perc_seq[record_id] >= 10:
                 makelog(record_id + " " + str(curr_perc) + "%")
                 last_perc_seq[record_id] = curr_perc
 
