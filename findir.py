@@ -87,6 +87,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             ir_end = max(qstart,qend,sstart,send)
             #calculate length
             ir_len = ir_end - ir_start
+
             #length constraints
             if ir_len > args.mite_max_len:
                 continue
