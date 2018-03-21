@@ -77,27 +77,26 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
     from Bio import SeqIO
     from Bio import pairwise2
     from subprocess import Popen, PIPE
+    from Bio.SeqUtils.lcc import lcc_simp
     from collections import OrderedDict
     import os, shutil
+    import math
 
     makelog("Clustering")
     cmd_list = [
     './vsearch-2.7.1/bin/vsearch',
     '--cluster_fast',file_names['file_candidates_fasta'],
+    #'--consout',file_names['file_representative'],
     '--threads',str(workers),
     '--strand','both',
-    #'--centroids',centroids_candidates_file,
     '--clusters',file_names['file_temp_cluster'],
     '--iddef','1',
-    #'--uc',cluster_candidates_file,
     '-id', '0.8']
     p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
     for c in iter(lambda: p.stdout.read(), ''):
-        print c
         makelog(c)
     makelog("Clustering done")
     makelog("Filtering clusters")
-
     #count for minimum file length
     clusters_dic = {}
     for fn in os.listdir(file_names['file_temp_cluster_dir']):
@@ -114,6 +113,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                         clusters_dic[fn] = [id_seq]
             fh.close()
     shutil.rmtree(file_names['file_temp_cluster_dir'])
+    
     #        os.unlink(file_names['file_temp_cluster_dir'] + fn)
     #        if n < args.min_copy_number:
     #            df.loc[df['candidate_id'] == 'id_seq', 'status'] =  'low_cn'
@@ -128,11 +128,24 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         #search candidates for that cluster
         #all possible 2-combinations of candidates
         candidates_in_cluster = filtered_clusters[current_cluster]
+        #porc_of_clusters = int(math.ceil(len(candidates_in_cluster) * 0.4))
+        #new_min_copy_number = max(min_copy_number,porc_of_clusters)
+        new_min_copy_number = min_copy_number
         sum_diff_fs_cluster = 0
         for x in candidates_in_cluster:
             totally_different_fs = True
+            cand_x = candidates[x]
+            fs_right_1 = cand_x['fs_right']
+            fs_left_1 = cand_x['fs_left']
+            if fs_left_1 == '' or fs_right_1 == '' or not isinstance(fs_left_1,basestring) or not isinstance(fs_right_1,basestring):
+                totally_different_fs = False
+                continue
+            if lcc_simp(fs_right_1.upper()) <= 0.8 or lcc_simp(fs_left_1.upper()) <= 0.8:
+                totally_different_fs = False
+                continue
+
+            at_least_one = False
             for y in candidates_in_cluster:
-                cand_x = candidates[x]
                 cand_y = candidates[y]
                 if cand_x['candidate_id'] == cand_y['candidate_id']:
                     continue
@@ -140,16 +153,18 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 # L1 x L2
                 # L1RC x R2
                 # R1RC x L2
-                fs_right_1 = cand_x['fs_right']
-                fs_left_1 = cand_x['fs_left']
                 fs_right_2 = cand_y['fs_right']
                 fs_left_2 = cand_y['fs_left']
                 #some MITE could be at the end or begining of the sequence and this not having flanking seqs
-                if fs_left_1 == '' or fs_right_1 == '' or fs_right_2 == '' or fs_left_2 == '':
+                if fs_right_2 == '' or fs_left_2 == '':
                     continue
                 #empty strings in some versions of pandas are returned as nan, so we make sure the flanking seqs are strings
-                if not isinstance(fs_left_1,basestring) or not isinstance(fs_right_1,basestring) or not isinstance(fs_right_2,basestring) == '' or isinstance(fs_left_2,basestring) == '':
+                if not isinstance(fs_right_2,basestring) or not isinstance(fs_left_2,basestring):
                     continue
+                if lcc_simp(fs_right_2.upper()) <= 0.8 or lcc_simp(fs_left_2.upper()) <= 0.8:
+                    continue
+
+
                 fs_left_1_rc = Seq(fs_left_1).reverse_complement()
                 fs_right_1_rc = Seq(fs_right_1).reverse_complement()
                 
@@ -164,16 +179,16 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 if max_score == []:
                     max_score = 0
                 max_score /= FSL
-                
+                at_least_one = True
                 if max_score > 0.5:
                     totally_different_fs = False
                     break
-            if totally_different_fs:
+            if totally_different_fs and at_least_one:
                 sum_diff_fs_cluster += 1
-            if sum_diff_fs_cluster >= min_copy_number:
+            if sum_diff_fs_cluster >= new_min_copy_number:
                 break
 
-        if sum_diff_fs_cluster < min_copy_number:
+        if sum_diff_fs_cluster < new_min_copy_number:
             #makelog(' '.join(filtered_clusters[current_cluster]) + " filtered by flanking sequence")
             del filtered_clusters[current_cluster]
 
@@ -187,15 +202,22 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
     #for candidate in candidates.values():
     count = 1
     family_number = 1#ordered_cluster.keys().index(clus)
+    buffer_nr = []
     for clus, seqs in ordered_cluster.items():
-    #if candidate['candidate_id'] in seqs:
+        one_per_family = False
         for seq in seqs:
             candidate = candidates[seq]
-            candidate['id'] = "MITE_T_%s|%s|%s|%s|%s|F%s" % (str(count),candidate['record'],candidate['start'],candidate['end'],candidate['tsd'],family_number)
+            candidate['id'] = "MITE_T_%s|%s|%s|%s|%s|%s|F%s" % (str(count),candidate['record'],candidate['start'],candidate['end'],candidate['tsd'],candidate['tir_len'],family_number)
             candidate['description'] = "%s CANDIDATE_ID:%s" % (candidate['description'], candidate['candidate_id'].split('|')[0])
             record = SeqRecord(Seq(candidate['seq']), id=candidate['id'], description=candidate['description'])
             buffer_rec.append(record)
+            if not one_per_family:
+                one_per_family = True
+                buffer_nr.append(record)
             count += 1
         family_number += 1
+
+
+    SeqIO.write(buffer_nr, file_names['file_representative'] , "fasta")
     SeqIO.write(buffer_rec, file_names['all_file'] , "fasta")
     cluster2seq(ordered_cluster, candidates, file_names['families_file'])

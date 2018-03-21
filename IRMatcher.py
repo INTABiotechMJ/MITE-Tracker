@@ -23,7 +23,7 @@ parser.add_argument("-g", "--genome", help="Genome file in fasta format", requir
 parser.add_argument("-j","--jobname", help="Will create files under a folder called [jobname]", required=True)
 parser.add_argument("-w","--workers", help="Max number of processes to use simultaneously", type=int, default=1)
 parser.add_argument("--mite_max_len", help="MITE max lenght", type=int, default=800)
-parser.add_argument("--mite_min_len", help="Min total lenght", type=int, default=100)
+parser.add_argument("--mite_min_len", help="Min total lenght", type=int, default=50)
 parser.add_argument("--align_min_len", help="TIR minimun aligmnent length", type=int, default=10)
 parser.add_argument("--tsd_min_len", help="TSD min lenght", type=int, default=2)
 parser.add_argument("--tsd_max_len", help="TSD max lenght", type=int, default=10)
@@ -35,6 +35,7 @@ args = parser.parse_args()#pylint: disable=invalid-name
 
 #file names
 file_names = {}
+file_names['file_representative'] = "results/" + args.jobname + "/families_nr.fasta"
 file_names['file_candidates_fasta'] = "results/" + args.jobname + "/candidates.fasta"
 file_names['file_candidates_cluster'] = "results/" + args.jobname + "/candidates.fasta.cluster"
 file_names['file_candidates_csv'] = "results/" + args.jobname + "/candidates.csv"
@@ -137,22 +138,16 @@ if args.task == 'all' or args.task == 'candidates':
             if q.qsize() >= max_queue_size:
                 q.join()
                 processed = True
-            #in order to avoid overloading of memory, we add a join()
-            #we do not direcly use the join() method so we can process several
-            #small sequences at once
 
     #In case of unprocessed sequences are left, let's wait
     q.join()
-
-
-    #labels = ['start','end','seq','record','len','ir_1','ir_2','tsd','tsd_in','fs_left','fs_right', 'ir_length','candidate_id','status','cluster']
     total_candidates = {}
     count = 1
     irs_seqs = []
     for part in candidates.values():
         for candidate in part:
             #organize and name
-            name = 'MITE_CAND_%i|%s|%s|%s|%s' % (count,candidate['record'], candidate['start'], candidate['end'], candidate['tsd'],)
+            name = 'MITE_CAND_%i|%s|%s|%s|%s|%s' % (count,candidate['record'], candidate['start'], candidate['end'], candidate['tsd'],candidate['tir_len'],)
             count += 1
             candidate['candidate_id'] = name
             total_candidates[name] = candidate
