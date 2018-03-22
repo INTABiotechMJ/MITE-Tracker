@@ -20,9 +20,8 @@ python ../MITETracker.py -g ../data/TGAC_by_chr/6D.fasta -w 2 -j TGAC_6D --task 
 python ../MITETracker.py -g ../data/TGAC_by_chr/7A.fasta -w 2 -j TGAC_7A --task candidates
 python ../MITETracker.py -g ../data/TGAC_by_chr/7B.fasta -w 2 -j TGAC_7B --task candidates
 python ../MITETracker.py -g ../data/TGAC_by_chr/7D.fasta -w 2 -j TGAC_7D --task candidates
-python ../MITETracker.py -g ../data/TGAC_by_chr/Un.fasta -w 2 -j TGAC_Un --task candidates
-mkdir TGAC  
-cat TGAC_*/families.fasta > TGAC/families.fasta
-cat TGAC_*/candidates.csv > TGAC/candidates.csv
+python ../MITETracker.py -g ../data/TGAC_by_chr/U.fasta -w 2 -j TGAC_U --task candidates
+mkdir TGAC
+cat ../results/TGAC_*/candidates.csv > ../results/TGAC/candidates.csv
 #cat TGAC_*/candidates.fasta > TGAC/candidates.fasta
 python ../MITETracker.py -g none -w 4 -j TGAC --task cluster --min_copy_number 4
