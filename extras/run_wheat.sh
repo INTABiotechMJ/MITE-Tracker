@@ -1,5 +1,5 @@
 cd ../
-python FAspliter.py -s ../data/Triticum_aestivum.TGACv1.dna.toplevel.fa -o ../data/TGAC_by_chr/ -l 1A 1B 1D 2A 2B 2D 3A 3B 3D 4A 4B 4D 5A 5B 5D 6A 6B 6D 7A 7B 7D
+python extras/FAspliter.py -s ../data/Triticum_aestivum.TGACv1.dna.toplevel.fa -o ../data/TGAC_by_chr/ -l 1A 1B 1D 2A 2B 2D 3A 3B 3D 4A 4B 4D 5A 5B 5D 6A 6B 6D 7A 7B 7D
 python MITETracker.py -g ../data/TGAC_by_chr/1A.fasta -w 2 -j TGAC_1A --task candidates
 python MITETracker.py -g ../data/TGAC_by_chr/1B.fasta -w 2 -j TGAC_1B --task candidates
 python MITETracker.py -g ../data/TGAC_by_chr/1D.fasta -w 2 -j TGAC_1D --task candidates
