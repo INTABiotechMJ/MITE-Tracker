@@ -24,4 +24,5 @@ python MITETracker.py -g ../data/TGAC_by_chr/7D.fasta -w 2 -j TGAC_7D --task can
 python MITETracker.py -g ../data/TGAC_by_chr/U.fasta -w 2 -j TGAC_U --task candidates
 mkdir results/TGAC
 cat results/TGAC_*/candidates.csv > results/TGAC/candidates.csv
+cat results/TGAC_*/candidates.fasta > results/TGAC/candidates.fasta
 python MITETracker.py -g none -w 4 -j TGAC --task cluster --min_copy_number 4
