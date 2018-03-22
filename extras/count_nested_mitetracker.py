@@ -4,7 +4,7 @@ from collections import OrderedDict
 import time
 start_time = time.time()
 
-file_repbase = "../rice_wz_6_mcn_4/all.fasta"
+file_repbase = "../results/olds/rice_wz_6_mcn_4/all.fasta"
 #file_repbase = "f1.fa"
 fasta_index = SeqIO.index(file_repbase, 'fasta')
 fasta_index = OrderedDict(sorted(fasta_index.items()))
@@ -24,6 +24,8 @@ for record_1 in fasta_index:
             int(end_2) >= int(end_1) - int(tir_len_1):
             #print record_1, record_2
             nested = True
+            elem_nested.append(record_1)
+            elem_nested.append(record_2)
             break
     if not nested:
         elem_not_nested.append(record_1)
@@ -31,5 +33,3 @@ print len(fasta_index)
 print len(elem_not_nested)
 print elem_nested
 print("--- %s seconds ---" % (time.time() - start_time))
-#36029
-#22763
