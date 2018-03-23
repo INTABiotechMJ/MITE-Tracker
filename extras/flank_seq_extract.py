@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord

@@ -14,3 +14,4 @@ results/*
 cdhit/
 vsearch-*/
 nohup.out
+extras/data/

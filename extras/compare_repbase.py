@@ -27,4 +27,5 @@ for ele in eles:
     print 'Total: %s' % (total, )
     print 'MITEs: %s' % (mites, )
     print 'Total Repbase NOT MITEs: %s' % (diff, )
+    print 'Wrong mites', pd.unique(df_res.qseqid)
     print  (diff * 100 / total)
