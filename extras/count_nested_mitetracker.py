@@ -4,7 +4,7 @@ from collections import OrderedDict
 import time
 start_time = time.time()
 
-file_repbase = "../results/olds/rice_wz_6_mcn_4/all.fasta"
+file_repbase = "../results/rice_wz_6_mcn_3/all.fasta"
 #file_repbase = "f1.fa"
 fasta_index = SeqIO.index(file_repbase, 'fasta')
 fasta_index = OrderedDict(sorted(fasta_index.items()))

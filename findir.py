@@ -37,12 +37,12 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
         '-reward','2',
         #'-max_target_seqs','1',
         '-penalty','-4',
-        '-word_size','6',
+        '-word_size','4',
         #'-ungapped',
         #'-evalue','140',
         '-strand','plus',
-        #'-soft_masking','false',
-        #'-dust','no',
+        '-soft_masking','false',
+        '-dust','no',
         '-outfmt',"6 sstart send qstart qend score length mismatch gaps gapopen nident"]
         p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
         out,err = p.communicate()
