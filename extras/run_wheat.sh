@@ -1,5 +1,5 @@
 cd ../
-python extras/FAspliter.py -s ../data/Triticum_aestivum.TGACv1.dna.toplevel.fa -o ../data/TGAC_by_chr/ -l 1A 1B 1D 2A 2B 2D 3A 3B 3D 4A 4B 4D 5A 5B 5D 6A 6B 6D 7A 7B 7D U
+#python extras/FAspliter.py -s ../data/Triticum_aestivum.TGACv1.dna.toplevel.fa -o ../data/TGAC_by_chr/ -l 1A 1B 1D 2A 2B 2D 3A 3B 3D 4A 4B 4D 5A 5B 5D 6A 6B 6D 7A 7B 7D U
 python MITETracker.py -g ../data/TGAC_by_chr/1A.fasta -w 2 -j TGAC_1A --task candidates
 python MITETracker.py -g ../data/TGAC_by_chr/1B.fasta -w 2 -j TGAC_1B --task candidates
 python MITETracker.py -g ../data/TGAC_by_chr/1D.fasta -w 2 -j TGAC_1D --task candidates
@@ -25,4 +25,4 @@ python MITETracker.py -g ../data/TGAC_by_chr/U.fasta -w 2 -j TGAC_U --task candi
 mkdir results/TGAC
 cat results/TGAC_*/candidates.csv > results/TGAC/candidates.csv
 cat results/TGAC_*/candidates.fasta > results/TGAC/candidates.fasta
-python MITETracker.py -g none -w 4 -j TGAC --task cluster --min_copy_number 4
+python MITETracker.py -g none -w 4 -j TGAC --task cluster --min_copy_number 6
