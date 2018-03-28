@@ -191,6 +191,8 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         if sum_diff_fs_cluster < new_min_copy_number:
             #makelog(' '.join(filtered_clusters[current_cluster]) + " filtered by flanking sequence")
             del filtered_clusters[current_cluster]
+        else:
+            makelog(' '.join(filtered_clusters[current_cluster]) + " not filtered by flanking sequence")
 
     #again to remove < MIN_COPY_NUMBER elements
     #filtered_clusters = filtercluster(filtered_clusters, args.min_copy_number, positions, df, 'low_copy_number_2')
@@ -203,6 +205,9 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
     count = 1
     family_number = 1#ordered_cluster.keys().index(clus)
     buffer_nr = []
+    output_gff = open(file_names['file_gff'],"w") 
+    output_gff.write("##gff-version 3\n")
+
     for clus, seqs in ordered_cluster.items():
         one_per_family = False
         for seq in seqs:
@@ -211,6 +216,10 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             candidate['description'] = "%s CANDIDATE_ID:%s" % (candidate['description'], candidate['candidate_id'].split('|')[0])
             record = SeqRecord(Seq(candidate['seq']), id=candidate['id'], description=candidate['description'])
             buffer_rec.append(record)
+            
+            write_row =  '\t'.join([candidate['record'], 'MITE_Tracker','MITE',str(candidate['start']), str(candidate['end']),'.','+','.','ID='+candidate['id'] ]) 
+            output_gff.write(write_row + '\n')
+            
             if not one_per_family:
                 one_per_family = True
                 buffer_nr.append(record)

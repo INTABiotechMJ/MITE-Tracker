@@ -34,9 +34,9 @@ fasta_seq = SeqIO.parse(args.fasta, 'fasta')
 for record in fasta_seq:
     if record.id in nonaut:
         clean_seq = ''.join(str(record.seq).splitlines())
-        #if len(clean_seq) < 800:
-        nonaut_mite.append(record.id)
-        nonaut_mite_rec.append(record)
+        if len(clean_seq) < 800:
+            nonaut_mite.append(record.id)
+            nonaut_mite_rec.append(record)
 
 print len(nonaut_mite)
 SeqIO.write(nonaut_mite_rec, args.out , "fasta")

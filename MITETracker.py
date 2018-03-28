@@ -37,6 +37,7 @@ args = parser.parse_args()#pylint: disable=invalid-name
 file_names = {}
 file_names['file_representative'] = "results/" + args.jobname + "/families_nr.fasta"
 file_names['file_candidates_fasta'] = "results/" + args.jobname + "/candidates.fasta"
+file_names['file_gff'] = "results/" + args.jobname + "/all.gff3"
 file_names['file_candidates_cluster'] = "results/" + args.jobname + "/candidates.fasta.cluster"
 file_names['file_candidates_csv'] = "results/" + args.jobname + "/candidates.csv"
 file_names['file_temp_cluster_dir'] = "results/" + args.jobname + "/temp/"

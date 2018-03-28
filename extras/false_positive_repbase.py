@@ -6,6 +6,7 @@ import os
 eles = []
 eles.append( ('detectMITE', 'data/detect_repbase.csv','data/detect_repbase_filtered.csv') )
 eles.append( ('MITE Tracker', 'data/tracker_repbase.csv','data/tracker_repbase_filtered.csv') )
+eles.append( ('MITE Hunter', 'data/hunter_repbase.csv','data/hunter_repbase_filtered.csv') )
 
 for ele in eles:
     name, seq_total, seq_filtered = ele
@@ -28,6 +29,5 @@ for ele in eles:
     print 'Total subject: %s' % (total_subject, )
     #print 'MITEs: %s' % (mites, )
     print 'Total Repbase NOT MITEs: %s' % (diff, )
-    print 'Wrong mites', pd.unique(df_res.qseqid)
-    print 'Wrong mites', pd.unique(df_res.sseqid)
+    print 'Wrong mites', pd.unique(df_res.qseqid),pd.unique(df_res.sseqid)
     print  (diff * 100 / total_query)
