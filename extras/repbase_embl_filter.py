@@ -23,7 +23,7 @@ for con in content_split:
     file_id = con.strip().split('\n')[0].replace('ID','',1).strip().split(' ')[0]
     if file_id == '':
         continue
-    if ('nonautonomous' in con or 'Nonautonomous' in con or 'non-autonomous' in con or 'Non-autonomous' in con) and \
+    if ('nonautonomous' in con or 'Nonautonomous' in con or 'non-autonomous' in con or 'Non-autonomous' in con or 'MITE' in con) and \
         not 'Retrotransposon' in con:
         nonaut.append(file_id)
 print len(nonaut)
