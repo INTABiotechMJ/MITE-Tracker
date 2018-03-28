@@ -77,10 +77,6 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             qstart, qend = min(qstart, qend),max(qstart, qend)
             sstart, send = min(sstart, send),max(sstart, send)
 
-            print sstart, send
-            print seq_q
-            print qstart,qend
-            print seq_q_prime#Seq(seq_q_prime).reverse_complement()
             #do not allow overlaped IRs
             #if qend >= sstart and send >= qstart:
                 #continue
