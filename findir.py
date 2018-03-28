@@ -20,7 +20,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             break
         splited_len = len(seq)
         seq_rc = str(Seq(seq).reverse_complement())
-        complexity = lcc_simp(seq)
+        complexity = lcc_simp(seq.upper())
         if complexity < 1:
             q.task_done()
             continue
@@ -70,7 +70,6 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             #subject transform cause it was reversed
             sstart = splited_len - sstart 
             send = splited_len - send
-            
             #obtain IR sequences
             seq_q = seq[qstart:qend]
             seq_q_prime = seq[send:sstart]
@@ -78,9 +77,13 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             qstart, qend = min(qstart, qend),max(qstart, qend)
             sstart, send = min(sstart, send),max(sstart, send)
 
+            print sstart, send
+            print seq_q
+            print qstart,qend
+            print seq_q_prime#Seq(seq_q_prime).reverse_complement()
             #do not allow overlaped IRs
-            if qend >= sstart and send >= qstart:
-                continue
+            #if qend >= sstart and send >= qstart:
+                #continue
 
             #organice positions
             ir_start = min(qstart,qend,sstart,send)

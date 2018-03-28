@@ -40,7 +40,6 @@ df_blast_p_db = pd.read_csv(args.program + '_db', delimiter="\t", header=None)
 df_blast_p_db.columns = ['qseqid','sseqid','pident','length','mismatch','gapopen','qstart','qend','sstart','send','evalue','bitscore',]
 
 #db covered elements
-print(len( pd.unique(df_blast_p_db.qseqid)))
 values = pd.unique(df_blast_p_db.sseqid)
 df_covered = pd.DataFrame({'sseqid': values})
 
@@ -48,6 +47,13 @@ df_covered = pd.DataFrame({'sseqid': values})
 df_uncovered = df_all_mites[~df_all_mites.qseqid.isin(df_blast_p_db.qseqid)]
 values = pd.unique(df_uncovered.qseqid)
 df_uncovered = pd.DataFrame({'qseqid': values})
+
+#db uncovered elements sseqname
+df_uncovered_db = df_db_mites[~df_db_mites.sseqid.isin(df_blast_p_db.sseqid)]
+values = pd.unique(df_uncovered_db.sseqid)
+df_uncovered_db = pd.DataFrame({'qseqid': values})
+
+print values
 
 elems = (df_uncovered.qseqid.tolist() + df_covered.sseqid.tolist())
 df_program = pd.DataFrame({'qseqid': elems})

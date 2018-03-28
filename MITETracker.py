@@ -143,7 +143,7 @@ if args.task == 'all' or args.task == 'candidates':
     #In case of unprocessed sequences are left, let's wait
     q.join()
     total_candidates = {}
-    count = 1
+    count = 0
     irs_seqs = []
     for part in candidates.values():
         for candidate in part:
