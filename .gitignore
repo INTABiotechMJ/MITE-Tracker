@@ -15,3 +15,4 @@ cdhit/
 vsearch-*/
 nohup.out
 extras/data/
+*_db
