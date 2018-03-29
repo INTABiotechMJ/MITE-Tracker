@@ -191,8 +191,8 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         if sum_diff_fs_cluster < new_min_copy_number:
             #makelog(' '.join(filtered_clusters[current_cluster]) + " filtered by flanking sequence")
             del filtered_clusters[current_cluster]
-        else:
-            makelog(' '.join(filtered_clusters[current_cluster]) + " not filtered by flanking sequence")
+        #else:
+        #    makelog(' '.join(filtered_clusters[current_cluster]) + " not filtered by flanking sequence")
 
     #again to remove < MIN_COPY_NUMBER elements
     #filtered_clusters = filtercluster(filtered_clusters, args.min_copy_number, positions, df, 'low_copy_number_2')

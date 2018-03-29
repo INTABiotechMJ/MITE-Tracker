@@ -53,6 +53,9 @@ file_names['file_candidates_dir'] = "results/" + args.jobname + "/temp/"
 if not os.path.isdir("results/" + args.jobname):
     os.mkdir("results/" + args.jobname)
 
+if not os.path.isdir("results/" + args.jobname + "/tmp"):
+    os.mkdir("results/" + args.jobname + "/tmp")
+
 if os.path.isdir(file_names['file_temp_cluster_dir']):
     shutil.rmtree(file_names['file_temp_cluster_dir'])
 os.mkdir(file_names['file_temp_cluster_dir'])

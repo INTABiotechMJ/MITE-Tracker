@@ -26,8 +26,8 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             continue
         record_q = SeqRecord(Seq(seq), id = record_id)
         record_s = SeqRecord(Seq(seq_rc), id = record_id + "_rc")
-        query_filename = "tmp/query" + str(record_id + "_" + str(split_index))+".tmp"
-        subject_filename = "tmp/subject" + str(record_id + "_" + str(split_index))+".tmp"
+        query_filename = "results/" + args.jobname + "/tmp/query" + str(record_id + "_" + str(split_index))+".tmp"
+        subject_filename = "results/" + args.jobname + "/tmp/subject" + str(record_id + "_" + str(split_index))+".tmp"
         SeqIO.write(record_q, query_filename, "fasta")
         SeqIO.write(record_s, subject_filename, "fasta")
         cmd_list = [
@@ -49,9 +49,8 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
         if err:
             print(split_index, record_id,seq_len)
             makelog("BLASTN error: %s" % (err, ) )
-        else:
-            os.remove(query_filename)
-            os.remove(subject_filename)
+        os.remove(query_filename)
+        os.remove(subject_filename)
         lines = out.splitlines()
         for row in lines:
             row = row.split()
