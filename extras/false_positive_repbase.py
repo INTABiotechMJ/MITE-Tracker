@@ -4,16 +4,31 @@ import os
 
 
 eles = []
-eles.append( ('detectMITE', 'data/detectmite/detect_repbase.csv','data/detectmite/detect_repbase_filtered.csv') )
-eles.append( ('MITE Tracker', 'data/tracker/tracker_repbase.csv','data/tracker/tracker_repbase_filtered.csv') )
-eles.append( ('MITE Hunter', 'data/mitehunter/hunter_repbase.csv','data/mitehunter/hunter_repbase_filtered.csv') )
+eles.append( ('detectMITE', 'data/detectmite/rice.mite.fasta') )
+eles.append( ('MITE_Tracker', 'data/tracker/families_nr.fasta') )
+eles.append( ('MITE_Hunter', 'data/mitehunter/all.fa') )
+repbase = 'data/repbase/repbase_oryzativa.fasta'
+repbase_filtered = 'data/repbase/repbase_nonautonomous.fasta'
 
 for ele in eles:
-    name, seq_total, seq_filtered = ele
-    df_repbase_total = pd.read_csv(seq_total, delimiter="\t")
+    name, families = ele
+    name_repbase = name + '_repbase'
+    name_repbase_filtered = name + '_repbase_filtered'
+    cmd = 'blastn -query %s  -subject %s -outfmt 6  > %s'
+    cmd = cmd % (families, repbase, name_repbase)
+    print cmd
+    os.system(cmd)
+
+
+    cmd = 'blastn -query %s  -subject %s -outfmt 6  > %s'
+    cmd = cmd % (families, repbase_filtered, name_repbase_filtered)
+    print cmd
+    os.system(cmd)
+
+    df_repbase_total = pd.read_csv(name_repbase, delimiter="\t")
     df_repbase_total.columns = ['qseqid','sseqid','pident','length','mismatch','gapopen','qstart','qend','sstart','send','evalue','bitscore',]
 
-    df_repbase_filtered = pd.read_csv(seq_filtered, delimiter="\t")
+    df_repbase_filtered = pd.read_csv(name_repbase_filtered, delimiter="\t")
     df_repbase_filtered.columns = ['qseqid','sseqid','pident','length','mismatch','gapopen','qstart','qend','sstart','send','evalue','bitscore',]
 
     df_res = df_repbase_total[~df_repbase_total.qseqid.isin(df_repbase_filtered.qseqid)]
@@ -29,5 +44,5 @@ for ele in eles:
     print 'Total subject: %s' % (total_subject, )
     print 'MITEs: %s' % (mites_covered, )
     print 'Total Repbase NOT MITEs: %s' % (diff, )
-    #print 'Wrong mites', pd.unique(df_res.qseqid)
-    print  (diff * 100 / total_query)
+    print 'Wrong mites', pd.unique(df_res.sseqid)
+    print  str((diff * 100 / total_query)) + "%"

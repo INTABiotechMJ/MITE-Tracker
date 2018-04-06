@@ -16,3 +16,4 @@ vsearch-*/
 nohup.out
 extras/data/
 *_db
+*.png*

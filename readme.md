@@ -1,3 +1,7 @@
+## TODO
+Delete TIR_LEN from description
+
+
 ## About
 
 IRmatcher is efficient and easy to run tool for discovering Miniature Inverted repeats Transposable Elements (MITEs) in genomic sequences. It is written in python and uses ncbi's blast+ for finding inverted repeats and cdhit to do the clustering. 
