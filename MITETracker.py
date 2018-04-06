@@ -108,11 +108,12 @@ if args.task == 'all' or args.task == 'candidates':
     perc_seq = {}
     last_perc_seq = {}
     candidates = {}
-
+    workers = []
     for i in range(args.workers):
         worker = Thread(target=findir.findIR, args=(q,args,l_lock, candidates, perc_seq, last_perc_seq))
         worker.setDaemon(True)
-        worker.start()
+        workers.append(worker)
+        #worker.start()
     windows_size = MITE_MAX_LEN * 2
     #windows_size = 5000 #int(ceil(MITE_MAX_LEN * 30))
 
@@ -123,7 +124,12 @@ if args.task == 'all' or args.task == 'candidates':
     #start adding sequences to process queue
     record_count = 0
     fasta_seq = SeqIO.parse(args.genome, 'fasta')
+    worker_started = False
     for record in fasta_seq:
+        if not worker_started:
+            worker_started = True
+            for worker in workers:
+                worker.start()
         processed = False
         queue_count = 1
         record_count += 1
@@ -142,7 +148,6 @@ if args.task == 'all' or args.task == 'candidates':
             if q.qsize() >= max_queue_size:
                 q.join()
                 processed = True
-
     #In case of unprocessed sequences are left, let's wait
     q.join()
     total_candidates = {}

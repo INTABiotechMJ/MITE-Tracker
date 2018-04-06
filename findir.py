@@ -15,7 +15,7 @@ def makelog(stri, do_print=True):
 def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
     while True:
         try:
-            seq, seq_fs, split_index, record_id, seq_len, count = q.get(timeout=5)
+            seq, seq_fs, split_index, record_id, seq_len, count = q.get(timeout=15)
         except Queue.Empty:
             break
         splited_len = len(seq)
