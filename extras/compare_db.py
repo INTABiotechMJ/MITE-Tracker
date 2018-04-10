@@ -24,7 +24,7 @@ elem = []
 for record_1 in fasta_index:
     elem.append(record_1)
 
-df_all_mites = pd.DataFrame({'qseqid': elem})
+df_program_mites = pd.DataFrame({'qseqid': elem})
 
 #extract elements ids from database
 fasta_index = SeqIO.index(args.db, 'fasta')
@@ -50,7 +50,7 @@ df_covered = pd.DataFrame({'sseqid': values_covered})
 #all results from database elements
 
 #db uncovered elements
-df_uncovered = df_all_mites[~df_all_mites.qseqid.isin(df_blast_p_db.qseqid)]
+df_uncovered = df_program_mites[~df_program_mites.qseqid.isin(df_blast_p_db.qseqid)]
 values = pd.unique(df_uncovered.qseqid)
 df_uncovered = pd.DataFrame({'qseqid': values})
 #all elements from program that are not in results
@@ -67,6 +67,9 @@ df_program = pd.DataFrame({'qseqid': elems})
 set1 = set(df_db_mites.sseqid)
 set2 = set(df_program.qseqid)
 
+#new elements found
+df_new_elements = df_program_mites[~df_program_mites.qseqid.isin(df_blast_p_db.qseqid)]
+
 v = venn2([set1, set2], (args.dbname, args.program))
 
 for text in v.set_labels:
@@ -77,9 +80,13 @@ for text in v.subset_labels:
 
 db_elements_len = len(values_covered)
 pm_elements_len = len(pd.unique(df_blast_p_db.qseqid))
+new_elements_list = pd.unique(df_new_elements.qseqid)
+new_elements_len = len(new_elements_list)
 perc_coverage = db_elements_len * 100 / len(elem_repbase)
 v.get_label_by_id('11').set_text('%i|%i\n(%i%%)' % (db_elements_len,pm_elements_len,perc_coverage ))
 plt.title('%s)' % (args.label,))
 outname = args.dbname + "_" + args.program + ".png"
 print outname
+print "New elements: %i" % (new_elements_len,)
+print new_elements_list
 plt.savefig(outname, dpi=600)

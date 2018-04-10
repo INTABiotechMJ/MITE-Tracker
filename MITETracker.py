@@ -126,6 +126,7 @@ if args.task == 'all' or args.task == 'candidates':
     fasta_seq = SeqIO.parse(args.genome, 'fasta')
     worker_started = False
     for record in fasta_seq:
+        #it takes too long to reach here and workers may timeout if we started them early
         if not worker_started:
             worker_started = True
             for worker in workers:

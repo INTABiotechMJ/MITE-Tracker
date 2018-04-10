@@ -91,7 +91,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
     '--strand','both',
     '--clusters',file_names['file_temp_cluster'],
     '--iddef','1',
-    '-id', '0.8']
+    '-id', '0.9']
     p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
     for c in iter(lambda: p.stdout.read(), ''):
         makelog(c)
@@ -99,7 +99,9 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
     makelog("Filtering clusters")
     #count for minimum file length
     clusters_dic = {}
-    for fn in os.listdir(file_names['file_temp_cluster_dir']):
+    list_dir = os.listdir(file_names['file_temp_cluster_dir'])
+    makelog("Initial clusters: %i" % (len(list_dir),))
+    for fn in list_dir:
         if os.path.isfile(file_names['file_temp_cluster_dir'] + fn):
             fh = open(file_names['file_temp_cluster_dir'] + fn)
             n = 0
