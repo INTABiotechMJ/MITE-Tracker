@@ -4,6 +4,7 @@ This scripts were used to analyze and compare outputs of MITE Tracker and other 
 #run_wheat.sh
 Used to find MITEs in wheat genome. First it was separated by chromosome using FAspliter.py. Then each chromosome was processed in order to find candidates separately. All candidates files were merged in the same directory and the cluster task was executed once. 
 
+blastn -task blastn -query data/tracker/example.1.fasta   -subject ../../data/IRGSP-1.0_genome.fasta  -outfmt 6  -evalue 10e-3  | awk -F "\t" '$4 > 240 { print $0 }'
 
 #mping in tracker
 blastn -query data/tracker/mping.fa    -subject data/tracker/all.fasta  -outfmt 6  

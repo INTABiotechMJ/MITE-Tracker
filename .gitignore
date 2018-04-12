@@ -3,7 +3,7 @@ subject
 *.fasta
 *.fa
 *.pyc
-venv
+*venv*
 test
 tmp/*.tmp
 dev/

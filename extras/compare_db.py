@@ -35,6 +35,7 @@ for record_1 in fasta_index:
 df_db_mites = pd.DataFrame({'sseqid': elem_repbase})
 
 #extract elements from program matching some element in database
+#cmd = 'blastn -word_size 15 -qcov_hsp_perc 90  -query %s  -subject %s -outfmt 6  > %s'
 cmd = 'blastn -query %s  -subject %s -outfmt 6  > %s'
 cmd = cmd % (args.mites, args.db, args.program + '_db')
 print cmd
@@ -80,6 +81,7 @@ for text in v.subset_labels:
 
 db_elements_len = len(values_covered)
 pm_elements_len = len(pd.unique(df_blast_p_db.qseqid))
+
 new_elements_list = pd.unique(df_new_elements.qseqid)
 new_elements_len = len(new_elements_list)
 perc_coverage = db_elements_len * 100 / len(elem_repbase)
@@ -87,6 +89,8 @@ v.get_label_by_id('11').set_text('%i|%i\n(%i%%)' % (db_elements_len,pm_elements_
 plt.title('%s)' % (args.label,))
 outname = args.dbname + "_" + args.program + ".png"
 print outname
+print "Program matches elements: %i" % (pm_elements_len,)
+print "DB matches elements: %i" % (db_elements_len,)
 print "New elements: %i" % (new_elements_len,)
 print new_elements_list
 plt.savefig(outname, dpi=600)

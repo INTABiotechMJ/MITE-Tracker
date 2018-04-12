@@ -25,15 +25,18 @@ cd irmatcher
 sudo apt-get install ncbi-blast+ virtualenv
 # in macOS: brew install ncbi-blast+ virtualenv
 
+
 #vsearch
 wget https://github.com/torognes/vsearch/archive/v2.7.1.tar.gz
 tar xzf v2.7.1.tar.gz
 cd vsearch-2.7.1
-./autogen.sh
+#might need sudo apt-get install autoconf
+sh autogen.sh
 ./configure
 make
 
 #python dependencies
+cd ..
 virtualenv venv
 source venv/bin/activate
 pip install -r requirements.txt
