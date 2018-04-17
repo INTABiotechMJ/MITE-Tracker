@@ -230,10 +230,10 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             write_row =  '\t'.join([candidate['record'], 'MITE_Tracker','MITE',str(candidate['start']), str(candidate['end']),'.','+','.','ID='+candidate['id'] ]) 
             output_gff.write(write_row + '\n')
             
-            if not one_per_family:
-                one_per_family = True
-                buffer_nr.append(record)
-            count += 1
+        #    if not one_per_family:
+        #        one_per_family = True
+        buffer_nr.append(record)
+        count += 1
         family_number += 1
 
 
