@@ -4,7 +4,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 from subprocess import Popen, PIPE
 import os
-import Queue
+import queue
 import logging
 
 def makelog(stri, do_print=True):
@@ -16,7 +16,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
     while True:
         try:
             seq, seq_fs, split_index, record_id, seq_len, count = q.get(timeout=15)
-        except Queue.Empty:
+        except queue.Empty:
             break
         splited_len = len(seq)
         seq_rc = str(Seq(seq).reverse_complement())
@@ -191,7 +191,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                         candidates[index] = []
                     candidates[index].append(new_element)
                         
-            curr_perc = split_index * 100 / seq_len
+            curr_perc = int(split_index * 100 / seq_len)
 
             if not record_id in perc_seq or not record_id in last_perc_seq:
                 perc_seq[record_id] = curr_perc

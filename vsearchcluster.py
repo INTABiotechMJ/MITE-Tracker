@@ -25,7 +25,7 @@ def filtercluster(cluster_dic, minimum, candidates):
             #group into overlapped (overlapped groups count as one individual)
             #ie should have more than minimum elements non overlapped
             cluster_positions = []
-            for k in cluster_dic[cluster]:   
+            for k in cluster_dic[cluster]:
                 cluster_positions.append( (candidates[k]['start'], candidates[k]['end']) )
             #cluster_candidates = [v for k,v in candidates.items() if k in cluster_dic[cluster]]
             #for candidate in cluster_candidates:
@@ -93,8 +93,16 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
     '--iddef','1',
     '-id', '0.8']
     p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
-    for c in iter(lambda: p.stdout.read(), ''):
-        makelog(c)
+    out,err = p.communicate()
+    #for stdout_line in iter(popen.stdout.readline, ""):
+    #    yield stdout_line
+    #popen.stdout.close()
+    #return_code = popen.wait()
+    ##if return_code:
+    #    raise subprocess.CalledProcessError(return_code, cmd)
+
+    #for c in iter(lambda: p.stdout.read(), ''):
+        #makelog(c)
     makelog("Clustering done")
     makelog("Filtering clusters")
     #count for minimum file length
@@ -139,7 +147,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             cand_x = candidates[x]
             fs_right_1 = cand_x['fs_right']
             fs_left_1 = cand_x['fs_left']
-            if fs_left_1 == '' or fs_right_1 == '' or not isinstance(fs_left_1,basestring) or not isinstance(fs_right_1,basestring):
+            if fs_left_1 == '' or fs_right_1 == '' or not isinstance(fs_left_1,str) or not isinstance(fs_right_1,str):
                 totally_different_fs = False
                 continue
             if lcc_simp(fs_right_1.upper()) <= 0.8 or lcc_simp(fs_left_1.upper()) <= 0.8:
@@ -161,7 +169,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 if fs_right_2 == '' or fs_left_2 == '':
                     continue
                 #empty strings in some versions of pandas are returned as nan, so we make sure the flanking seqs are strings
-                if not isinstance(fs_right_2,basestring) or not isinstance(fs_left_2,basestring):
+                if not isinstance(fs_right_2,str) or not isinstance(fs_left_2,str):
                     continue
                 if lcc_simp(fs_right_2.upper()) <= 0.8 or lcc_simp(fs_left_2.upper()) <= 0.8:
                     continue

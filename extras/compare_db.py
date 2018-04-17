@@ -9,16 +9,17 @@ import pandas as pd
 import os
 
 parser = argparse.ArgumentParser()#pylint: disable=invalid-name
-parser.add_argument("-m", "--mites", help="All elements from program to analyze", required=True)
-parser.add_argument("-d", "--db", help="MITE elements from database", required=True)
-parser.add_argument("-p", "--program", help="Program name", required=True)
-parser.add_argument("-n", "--dbname", help="Database name", required=True)
-parser.add_argument("-l", "--label", help="label name", required=True)
+parser.add_argument("-e1", "--elements_1", help="All elements from program to analyze", required=True)
+parser.add_argument("-e2", "--elements_2", help="MITE elements from database", required=True)
+parser.add_argument("-e1n", "--elements_1_name", help="Program name", required=True)
+parser.add_argument("-e2n", "--elements_2_name", help="Database name", required=True)
+parser.add_argument("-l", "--label", help="display label name")
+parser.add_argument("-o", "--output", help="New elements fasta")
 args = parser.parse_args()#pylint: disable=invalid-name
 
 
 #extract elements ids from program
-fasta_index = SeqIO.index(args.mites, 'fasta')
+fasta_index = SeqIO.index(args.elements_1, 'fasta')
 fasta_index = OrderedDict(sorted(fasta_index.items()))
 elem = []
 for record_1 in fasta_index:
@@ -27,7 +28,7 @@ for record_1 in fasta_index:
 df_program_mites = pd.DataFrame({'qseqid': elem})
 
 #extract elements ids from database
-fasta_index = SeqIO.index(args.db, 'fasta')
+fasta_index = SeqIO.index(args.elements_2, 'fasta')
 fasta_index = OrderedDict(sorted(fasta_index.items()))
 elem_repbase = []
 for record_1 in fasta_index:
@@ -36,11 +37,12 @@ df_db_mites = pd.DataFrame({'sseqid': elem_repbase})
 
 #extract elements from program matching some element in database
 #cmd = 'blastn -word_size 15 -qcov_hsp_perc 90  -query %s  -subject %s -outfmt 6  > %s'
-cmd = 'blastn -query %s  -subject %s -outfmt 6  > %s'
-cmd = cmd % (args.mites, args.db, args.program + '_db')
+cmd = 'blastn -task blastn -evalue 10e-3 -qcov_hsp_perc 90 -query %s  -subject %s -outfmt 6  > %s'
+cmd = cmd % (args.elements_1, args.elements_2, args.elements_1_name + '_db')
 print cmd
 os.system(cmd)
-df_blast_p_db = pd.read_csv(args.program + '_db', delimiter="\t", header=None)
+df_blast_p_db = pd.read_csv(args.elements_1_name + '_db', delimiter="\t", header=None)
+os.remove(args.elements_1_name + '_db')
 df_blast_p_db.columns = ['qseqid','sseqid','pident','length','mismatch','gapopen','qstart','qend','sstart','send','evalue','bitscore',]
 #query = program
 #subject = database
@@ -71,7 +73,7 @@ set2 = set(df_program.qseqid)
 #new elements found
 df_new_elements = df_program_mites[~df_program_mites.qseqid.isin(df_blast_p_db.qseqid)]
 
-v = venn2([set1, set2], (args.dbname, args.program))
+v = venn2([set1, set2], (args.elements_2_name, args.elements_1_name))
 
 for text in v.set_labels:
     text.set_fontsize(17)
@@ -86,11 +88,21 @@ new_elements_list = pd.unique(df_new_elements.qseqid)
 new_elements_len = len(new_elements_list)
 perc_coverage = db_elements_len * 100 / len(elem_repbase)
 v.get_label_by_id('11').set_text('%i|%i\n(%i%%)' % (db_elements_len,pm_elements_len,perc_coverage ))
-plt.title('%s)' % (args.label,))
-outname = args.dbname + "_" + args.program + ".png"
+if args.label:
+    plt.title('%s)' % (args.label,))
+
+outname = args.elements_2_name + "_" + args.elements_1_name + ".png"
 print outname
 print "Program matches elements: %i" % (pm_elements_len,)
 print "DB matches elements: %i" % (db_elements_len,)
 print "New elements: %i" % (new_elements_len,)
-print new_elements_list
 plt.savefig(outname, dpi=600)
+
+fasta_file = SeqIO.parse(args.elements_1, 'fasta')
+
+new_records = []
+for record in fasta_file:
+    if record.id in new_elements_list:
+        new_records.append(record)
+        print record
+SeqIO.write(new_records, args.output, 'fasta')

@@ -13,7 +13,7 @@ from collections import OrderedDict
 import sys
 import pandas as pd
 from threading import Thread, Lock, active_count
-import Queue
+import queue
 import logging
 import findir
 
@@ -62,13 +62,7 @@ os.mkdir(file_names['file_temp_cluster_dir'])
 
 
 filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/" + args.jobname + "/out.log")
-logging.basicConfig(
-    filename=filename,
-    level=logging.DEBUG,
-    handlers=[
-    logging.FileHandler(filename),
-    logging.StreamHandler()],
-    format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+logging.basicConfig(filename=filename,level=logging.DEBUG,format='%(asctime)s %(message)s')
 
 MITE_MAX_LEN = args.mite_max_len
 MIN_TSD_LEN = args.tsd_min_len
@@ -103,7 +97,7 @@ if args.task == 'all' or args.task == 'candidates':
     fh.close()
 
     #initialize workers
-    q = Queue.Queue(maxsize=0)
+    q = queue.Queue(maxsize=0)
     l_lock = Lock()
     perc_seq = {}
     last_perc_seq = {}
@@ -171,7 +165,10 @@ if args.task == 'all' or args.task == 'candidates':
     #write candidate fasta
     SeqIO.write(irs_seqs, file_names['file_candidates_fasta'] , "fasta")
     #write candidates csv
-    df = pd.DataFrame(total_candidates.values())
+    to_csv = []
+    for k,v in total_candidates.items():
+        to_csv.append(v)
+    df = pd.DataFrame(to_csv)
     df.to_csv(file_names['file_candidates_csv'], index=False)
 
 if args.task == 'cluster':
@@ -179,7 +176,7 @@ if args.task == 'cluster':
     total_candidates = {}
     for index, row in df.sort_values('start').iterrows():
         total_candidates[row.candidate_id] = row.to_dict()
-
+        
 if args.task == 'all' or args.task == 'cluster':
     import vsearchcluster
     vsearchcluster.cluster(file_names, total_candidates, args.min_copy_number, args.FSL, args.workers)
