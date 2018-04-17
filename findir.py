@@ -109,8 +109,8 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                 tsd_two = seq_fs[ir_end + args.FSL:ir_end + i + args.FSL]
                 if tsd_one.lower() == tsd_two.lower():
                     valid_tsd = True
-                    mite_pos_one = ir_start - i + args.FSL
-                    mite_pos_two = ir_end + i + args.FSL
+                    mite_pos_one = ir_start + args.FSL
+                    mite_pos_two = ir_end + args.FSL
                     tsd_in = 'no'
                     break
                 i -= 1
@@ -123,8 +123,8 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                     tsd_two = seq_fs[ir_end - i + args.FSL:ir_end + args.FSL]
                     if tsd_one.lower() == tsd_two.lower():
                         valid_tsd = True
-                        mite_pos_one = ir_start + args.FSL
-                        mite_pos_two = ir_end  + args.FSL
+                        mite_pos_one = ir_start + args.FSL + i
+                        mite_pos_two = ir_end  + args.FSL - i
                         tsd_in = 'yes'
                         break
                     i -= 1
