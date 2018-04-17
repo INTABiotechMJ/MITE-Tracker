@@ -220,6 +220,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
 
     for clus, seqs in ordered_cluster.items():
         one_per_family = False
+        tsd_family = []
         for seq in seqs:
             candidate = candidates[seq]
             candidate['id'] = "MITE_T_%s|%s|%s|%s|%s|%s|F%s" % (str(count),candidate['record'],candidate['start'],candidate['end'],candidate['tsd'],candidate['tir_len'],family_number)
@@ -229,11 +230,16 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             
             write_row =  '\t'.join([candidate['record'], 'MITE_Tracker','MITE',str(candidate['start']), str(candidate['end']),'.','+','.','ID='+candidate['id'] ]) 
             output_gff.write(write_row + '\n')
-            
-        #    if not one_per_family:
-        #        one_per_family = True
-        buffer_nr.append(record)
-        count += 1
+
+            tsd_family.append(candidate['tsd'])
+            if not one_per_family:
+                one_per_family = True
+                record_family = record
+                buffer_nr.append(record_family)
+            count += 1
+
+        tsd_consensus = max(set(tsd_family), key=tsd_family.count)
+        record_family.description = '%s common_tsd:%s' % (record_family.description, tsd_consensus)
         family_number += 1
 
 
