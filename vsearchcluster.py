@@ -237,9 +237,12 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 record_family = record
                 buffer_nr.append(record_family)
             count += 1
-
-        tsd_consensus = max(set(tsd_family), key=tsd_family.count)
-        record_family.description = '%s common_tsd:%s' % (record_family.description, tsd_consensus)
+        from statistics import mode,StatisticsError
+        try:
+            tsd_consensus = mode(tsd_family)
+            record_family.description = '%s COMMON_TSD:%s' % (record_family.description, tsd_consensus)
+        except StatisticsError:
+            pass
         family_number += 1
 
 
