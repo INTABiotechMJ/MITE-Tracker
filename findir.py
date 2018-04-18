@@ -21,7 +21,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
         splited_len = len(seq)
         seq_rc = str(Seq(seq).reverse_complement())
         complexity = lcc_simp(seq.upper())
-        if complexity < 1:
+        if complexity < 1.3:
             q.task_done()
             continue
         record_q = SeqRecord(Seq(seq), id = record_id)
@@ -95,10 +95,10 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             #ir_seq = seq[ir_start:ir_end]
 
             #again validate complexity, a value of 1 means only two different nucleotides are present
-            if lcc_simp(seq_q.upper()) <= 1.2:
+            if lcc_simp(seq_q.upper()) <= 1.3:
                 continue
 
-            if lcc_simp(seq_q_prime.upper()) <= 1.2:
+            if lcc_simp(seq_q_prime.upper()) <= 1.3:
                 continue
 
             #validate TSD outside TIRs

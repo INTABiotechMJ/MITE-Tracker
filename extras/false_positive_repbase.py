@@ -14,13 +14,13 @@ for ele in eles:
     name, families = ele
     name_repbase = name + '_repbase'
     name_repbase_filtered = name + '_repbase_filtered'
-    cmd = 'blastn -query %s  -subject %s -outfmt 6  > %s'
+    cmd = 'blastn -task blastn -evalue 10e-3 -qcov_hsp_perc 80  -query %s  -subject %s -outfmt 6  > %s'
     cmd = cmd % (families, repbase, name_repbase)
     print cmd
     os.system(cmd)
 
 
-    cmd = 'blastn -query %s  -subject %s -outfmt 6  > %s'
+    cmd = 'blastn -task blastn -evalue 10e-3 -qcov_hsp_perc 80  -query %s  -subject %s -outfmt 6  > %s'
     cmd = cmd % (families, repbase_filtered, name_repbase_filtered)
     print cmd
     os.system(cmd)
@@ -44,5 +44,5 @@ for ele in eles:
     print 'Total subject: %s' % (total_subject, )
     print 'MITEs: %s' % (mites_covered, )
     print 'Total Repbase NOT MITEs: %s' % (diff, )
-    print 'Wrong mites', pd.unique(df_res.sseqid)
+    #print 'Wrong mites', pd.unique(df_res.sseqid)
     print  str((diff * 100 / total_query)) + "%"
