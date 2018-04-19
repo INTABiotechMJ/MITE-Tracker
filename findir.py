@@ -4,8 +4,18 @@ from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 from subprocess import Popen, PIPE
 import os
+from Bio.SeqUtils import GC
 import queue
 import logging
+
+def complex_enough(seq):
+    complexity = lcc_simp(seq.upper())
+    if complexity < 1.3:
+        return False
+    gc = GC(seq.upper())
+    if gc < 20 or gc > 80:
+        return False
+    return True
 
 def makelog(stri, do_print=True):
     if do_print:
@@ -21,7 +31,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
         splited_len = len(seq)
         seq_rc = str(Seq(seq).reverse_complement())
         complexity = lcc_simp(seq.upper())
-        if complexity < 1.3:
+        if not complex_enough(seq):
             q.task_done()
             continue
         record_q = SeqRecord(Seq(seq), id = record_id)
@@ -76,13 +86,10 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             qstart, qend = min(qstart, qend),max(qstart, qend)
             sstart, send = min(sstart, send),max(sstart, send)
 
-
-
             #organice positions
             ir_start = min(qstart,qend,sstart,send)
             ir_end = max(qstart,qend,sstart,send)
             
-
             #calculate length
             ir_len = ir_end - ir_start
 
@@ -95,10 +102,10 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             #ir_seq = seq[ir_start:ir_end]
 
             #again validate complexity, a value of 1 means only two different nucleotides are present
-            if lcc_simp(seq_q.upper()) <= 1.3:
+            if not complex_enough(seq_q):
                 continue
 
-            if lcc_simp(seq_q_prime.upper()) <= 1.3:
+            if not complex_enough(seq_q_prime):
                 continue
             
             #if overlaped IRs, calculate complexity at half
@@ -106,11 +113,9 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                 middle_point = int((ir_start + ir_end) / 2)
                 seq_middle_1 = seq[ir_start:middle_point]
                 seq_middle_2 = seq[middle_point:ir_end]
-                if lcc_simp(seq_middle_1.upper()) <= 1.3:
-                    print(seq[ir_start:ir_end])
-                    print(seq_middle_1.upper(),lcc_simp(seq_middle_1.upper()),seq_middle_2.upper(),lcc_simp(seq_middle_2.upper()))
+                if not complex_enough(seq_middle_1):
                     continue
-                if lcc_simp(seq_middle_2.upper()) <= 1.3:
+                if not complex_enough(seq_middle_2):
                     continue
 
             #validate TSD outside TIRs

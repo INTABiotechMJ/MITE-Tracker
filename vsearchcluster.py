@@ -2,7 +2,7 @@
 import itertools
 import logging
 from Bio.SeqUtils.lcc import lcc_simp
-
+from Bio.SeqUtils import GC
 def makelog(stri, do_print=True):
     if do_print:
         print(stri)
@@ -72,13 +72,22 @@ def cluster2seq(cluster_dic, candidates, outfile):
     # close the filtered results file
     filter_file.close()
 
+
+def complex_enough(seq):
+    complexity = lcc_simp(seq.upper())
+    if complexity < 1.3:
+        return False
+    gc = GC(seq.upper())
+    if gc < 20 or gc > 80:
+        return False
+    return True
+
 def cluster(file_names, candidates, min_copy_number, FSL, workers):
     from Bio.SeqRecord import SeqRecord
     from Bio.Seq import Seq
     from Bio import SeqIO
     from Bio import pairwise2
     from subprocess import Popen, PIPE
-    from Bio.SeqUtils.lcc import lcc_simp
     from collections import OrderedDict
     import os, shutil
     import math
@@ -151,7 +160,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             if fs_left_1 == '' or fs_right_1 == '' or not isinstance(fs_left_1,str) or not isinstance(fs_right_1,str):
                 totally_different_fs = False
                 continue
-            if lcc_simp(fs_right_1.upper()) <= 0.8 or lcc_simp(fs_left_1.upper()) <= 0.8:
+            if not complex_enough(fs_right_1) or not complex_enough(fs_left_1):
                 totally_different_fs = False
                 continue
 
@@ -172,7 +181,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 #empty strings in some versions of pandas are returned as nan, so we make sure the flanking seqs are strings
                 if not isinstance(fs_right_2,str) or not isinstance(fs_left_2,str):
                     continue
-                if lcc_simp(fs_right_2.upper()) <= 0.8 or lcc_simp(fs_left_2.upper()) <= 0.8:
+                if not complex_enough(fs_right_2) or not complex_enough(fs_left_2):
                     continue
 
 
