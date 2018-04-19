@@ -174,7 +174,7 @@ if args.task == 'all' or args.task == 'candidates':
 if args.task == 'cluster':
     df = pd.read_csv(file_names['file_candidates_csv'])
     total_candidates = {}
-    for index, row in df.sort_values('start').iterrows():
+    for index, row in df.iterrows():
         total_candidates[row.candidate_id] = row.to_dict()
         
 if args.task == 'all' or args.task == 'cluster':
