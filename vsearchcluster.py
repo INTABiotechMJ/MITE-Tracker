@@ -224,9 +224,6 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         tsd_family = []
         for seq in seqs:
             candidate = candidates[seq]
-            complexity = lcc_simp(candidate['seq'].upper())
-            if complexity < 1.3:
-                continue
             candidate['id'] = "MITE_T_%s|%s|%s|%s|%s|%s|F%s" % (str(count),candidate['record'],candidate['start'],candidate['end'],candidate['tsd'],candidate['tir_len'],family_number)
             candidate['description'] = "%s CANDIDATE_ID:%s" % (candidate['description'], candidate['candidate_id'].split('|')[0])
             record = SeqRecord(Seq(candidate['seq']), id=candidate['id'], description=candidate['description'])

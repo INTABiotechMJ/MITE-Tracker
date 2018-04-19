@@ -76,13 +76,13 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             qstart, qend = min(qstart, qend),max(qstart, qend)
             sstart, send = min(sstart, send),max(sstart, send)
 
-            #do not allow overlaped IRs
-            #if qend >= sstart and send >= qstart:
-                #continue
+
 
             #organice positions
             ir_start = min(qstart,qend,sstart,send)
             ir_end = max(qstart,qend,sstart,send)
+            
+
             #calculate length
             ir_len = ir_end - ir_start
 
@@ -100,6 +100,18 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
 
             if lcc_simp(seq_q_prime.upper()) <= 1.3:
                 continue
+            
+            #if overlaped IRs, calculate complexity at half
+            if qend >= sstart and send >= qstart:
+                middle_point = int((ir_start + ir_end) / 2)
+                seq_middle_1 = seq[ir_start:middle_point]
+                seq_middle_2 = seq[middle_point:ir_end]
+                if lcc_simp(seq_middle_1.upper()) <= 1.3:
+                    print(seq[ir_start:ir_end])
+                    print(seq_middle_1.upper(),lcc_simp(seq_middle_1.upper()),seq_middle_2.upper(),lcc_simp(seq_middle_2.upper()))
+                    continue
+                if lcc_simp(seq_middle_2.upper()) <= 1.3:
+                    continue
 
             #validate TSD outside TIRs
             i = args.tsd_max_len

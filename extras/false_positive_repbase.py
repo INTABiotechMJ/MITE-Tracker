@@ -44,5 +44,5 @@ for ele in eles:
     print 'Total subject: %s' % (total_subject, )
     print 'MITEs: %s' % (mites_covered, )
     print 'Total Repbase NOT MITEs: %s' % (diff, )
-    #print 'Wrong mites', pd.unique(df_res.sseqid)
+    print 'Wrong mites', pd.unique(df_res.sseqid)
     print  str((diff * 100 / total_query)) + "%"
