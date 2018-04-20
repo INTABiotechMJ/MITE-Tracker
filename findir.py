@@ -10,10 +10,10 @@ import logging
 
 def complex_enough(seq):
     complexity = lcc_simp(seq.upper())
-    if complexity < 1.3:
+    if complexity < 1.25:
         return False
     gc = GC(seq.upper())
-    if gc < 20 or gc > 80:
+    if gc < 15 or gc > 95:
         return False
     return True
 
@@ -76,22 +76,14 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             #filter valids IR
             if length < args.align_min_len:
                 continue
+
             #subject transform cause it was reversed
             sstart = splited_len - sstart 
             send = splited_len - send
+
             #obtain IR sequences
             seq_q = seq[qstart:qend]
             seq_q_prime = seq[send:sstart]
-
-            #if overlaped IRs, calculate complexity at half
-            if qend >= sstart and send >= qstart:
-                middle_point = int((ir_start + ir_end) / 2)
-                seq_middle_1 = seq[ir_start:middle_point]
-                seq_middle_2 = seq[middle_point:ir_end]
-                if not complex_enough(seq_middle_1):
-                    continue
-                if not complex_enough(seq_middle_2):
-                    continue
 
             qstart, qend = min(qstart, qend),max(qstart, qend)
             sstart, send = min(sstart, send),max(sstart, send)
@@ -131,6 +123,7 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                     tsd_in = 'no'
                     break
                 i -= 1
+
             #validate TSD inside TIRs
             #TSDs cannot be a large part of TIRs
             if not valid_tsd:

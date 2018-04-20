@@ -75,10 +75,10 @@ def cluster2seq(cluster_dic, candidates, outfile):
 
 def complex_enough(seq):
     complexity = lcc_simp(seq.upper())
-    if complexity < 1.3:
+    if complexity < 1.25:
         return False
     gc = GC(seq.upper())
-    if gc < 20 or gc > 80:
+    if gc < 25 or gc > 75:
         return False
     return True
 

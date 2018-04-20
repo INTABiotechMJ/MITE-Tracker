@@ -41,7 +41,7 @@ def compare(elements_1, elements_2, elements_1_name, elements_2_name, label,ax,s
     #cmd = 'blastn -query %s  -subject %s -outfmt 6  > %s'
     dbname = elements_2_name.replace(' ','_') + '_' + elements_1_name.replace(' ','_') + '_db'
     cmd = cmd % (elements_1.replace(' ','_'), elements_2.replace(' ','_'),  dbname)
-    print cmd
+    print(cmd)
     os.system(cmd)
     df_blast_p_db = pd.read_csv(dbname, delimiter="\t", header=None)
     os.remove(dbname)
@@ -62,8 +62,8 @@ def compare(elements_1, elements_2, elements_1_name, elements_2_name, label,ax,s
 
     #db uncovered elements sseqname
     df_uncovered_db = df_db_mites[~df_db_mites.sseqid.isin(df_blast_p_db.sseqid)]
-    values = pd.unique(df_uncovered_db.sseqid)
-    df_uncovered_db = pd.DataFrame({'qseqid': values})
+    values_uncovered_db = pd.unique(df_uncovered_db.sseqid)
+    df_uncovered_db = pd.DataFrame({'qseqid': values_uncovered_db})
     #all elements from database that are not in results
 
     elems = (df_uncovered.qseqid.tolist() + df_covered.sseqid.tolist())
@@ -95,10 +95,13 @@ def compare(elements_1, elements_2, elements_1_name, elements_2_name, label,ax,s
         ax.set_title(title)
 
     outname = elements_2_name + "_" + elements_1_name + ".png"
-    print outname
-    print "Program matches elements: %i" % (pm_elements_len,)
-    print "DB matches elements: %i" % (db_elements_len,)
-    print "New elements: %i" % (new_elements_len,)
+    print(outname)
+    print("Program matches elements: %i" % (pm_elements_len,))
+    print("DB matches elements: %i" % (db_elements_len,))
+    print("New elements: %i" % (new_elements_len,))
+    print("Uncovered db elements: ")
+    print(values_uncovered_db)
+
     if savefigname:
         plt.savefig(savefigname, dpi=800,bbox_inches='tight')
 
