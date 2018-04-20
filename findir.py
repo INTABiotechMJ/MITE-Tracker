@@ -51,8 +51,8 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
         #'-ungapped',
         #'-evalue','140',
         '-strand','plus',
-        '-soft_masking','false',
-        '-dust','no',
+        #'-soft_masking','false',
+        #'-dust','no',
         '-outfmt',"6 sstart send qstart qend score length mismatch gaps gapopen nident"]
         p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
         out,err = p.communicate()
@@ -83,6 +83,16 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             seq_q = seq[qstart:qend]
             seq_q_prime = seq[send:sstart]
 
+            #if overlaped IRs, calculate complexity at half
+            if qend >= sstart and send >= qstart:
+                middle_point = int((ir_start + ir_end) / 2)
+                seq_middle_1 = seq[ir_start:middle_point]
+                seq_middle_2 = seq[middle_point:ir_end]
+                if not complex_enough(seq_middle_1):
+                    continue
+                if not complex_enough(seq_middle_2):
+                    continue
+
             qstart, qend = min(qstart, qend),max(qstart, qend)
             sstart, send = min(sstart, send),max(sstart, send)
 
@@ -107,16 +117,6 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
 
             if not complex_enough(seq_q_prime):
                 continue
-            
-            #if overlaped IRs, calculate complexity at half
-            if qend >= sstart and send >= qstart:
-                middle_point = int((ir_start + ir_end) / 2)
-                seq_middle_1 = seq[ir_start:middle_point]
-                seq_middle_2 = seq[middle_point:ir_end]
-                if not complex_enough(seq_middle_1):
-                    continue
-                if not complex_enough(seq_middle_2):
-                    continue
 
             #validate TSD outside TIRs
             i = args.tsd_max_len
