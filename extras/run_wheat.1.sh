@@ -1,6 +1,6 @@
 cd ../
 #python3 -m MITETracker -g ../../data/iwgsc_by_chr/chr1A.fasta -w 4 -j IWGSC_1A --task candidates
-python3 -m MITETracker -g ../../data/iwgsc_by_chr/chr1B.fasta -w 4 -j IWGSC_1B --task candidates
+#python3 -m MITETracker -g ../../data/iwgsc_by_chr/chr1B.fasta -w 4 -j IWGSC_1B --task candidates
 python3 -m MITETracker -g ../../data/iwgsc_by_chr/chr1D.fasta -w 4 -j IWGSC_1D --task candidates
 python3 -m MITETracker -g ../../data/iwgsc_by_chr/chr2A.fasta -w 4 -j IWGSC_2A --task candidates
 python3 -m MITETracker -g ../../data/iwgsc_by_chr/chr2B.fasta -w 4 -j IWGSC_2B --task candidates
