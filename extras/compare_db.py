@@ -44,8 +44,22 @@ def compare(elements_1, elements_2, elements_1_name, elements_2_name, label,ax,s
     print(cmd)
     os.system(cmd)
     df_blast_p_db = pd.read_csv(dbname, delimiter="\t", header=None)
-    os.remove(dbname)
+    #os.remove(dbname)
     df_blast_p_db.columns = ['qseqid','sseqid','pident','length','mismatch','gapopen','qstart','qend','sstart','send','evalue','bitscore',]
+
+    #again backwards
+    cmd = 'blastn -task blastn -evalue 10e-3 -qcov_hsp_perc 80 -subject %s  -query %s -outfmt 6  > %s'
+    #cmd = 'blastn -query %s  -subject %s -outfmt 6  > %s'
+    dbname = elements_2_name.replace(' ','_') + '_' + elements_1_name.replace(' ','_') + '_db'
+    cmd = cmd % (elements_1.replace(' ','_'), elements_2.replace(' ','_'),  dbname)
+    print(cmd)
+    os.system(cmd)
+    df_blast_p_db_back = pd.read_csv(dbname, delimiter="\t", header=None)
+    #os.remove(dbname)
+    df_blast_p_db_back.columns = ['sseqid','qseqid','pident','length','mismatch','gapopen','qstart','qend','sstart','send','evalue','bitscore',]
+    frames = [df_blast_p_db, df_blast_p_db_back]
+    df_blast_p_db = pd.concat(frames)
+
     #query = program
     #subject = database
 
