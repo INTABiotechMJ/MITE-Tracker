@@ -27,7 +27,8 @@ def filtercluster(cluster_dic, minimum, candidates):
             #ie should have more than minimum elements non overlapped
             cluster_positions = []
             for k in cluster_dic[cluster]:
-                cluster_positions.append( (candidates[k]['start'], candidates[k]['end']) )
+                if isinstance(candidates[k]['start'], int) and isinstance(candidates[k]['end'], int):
+                    cluster_positions.append( (candidates[k]['start'], candidates[k]['end']) )
             #cluster_candidates = [v for k,v in candidates.items() if k in cluster_dic[cluster]]
             #for candidate in cluster_candidates:
             #    cluster_positions.append( (candidate['start'], candidate['end']) )
@@ -78,7 +79,7 @@ def complex_enough(seq):
     if complexity < 1.25:
         return False
     gc = GC(seq.upper())
-    if gc < 25 or gc > 75:
+    if gc < 15 or gc > 95:
         return False
     return True
 
