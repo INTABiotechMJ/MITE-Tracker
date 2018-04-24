@@ -121,13 +121,22 @@ def compare(elements_1, elements_2, elements_1_name, elements_2_name, label,ax,s
 
 
     fasta_file = SeqIO.parse(elements_1, 'fasta')
-
+    #new elements of program
     new_records = []
     for record in fasta_file:
         if record.id in new_elements_list:
             new_records.append(record)
-            #print record
+
     SeqIO.write(new_records, "newseqs" + elements_1_name + " " + elements_2_name, 'fasta')
+    
+    #uncovered elements from database
+    fasta_file = SeqIO.parse(elements_2, 'fasta')
+    new_records = []
+    for record in fasta_file:
+        if record.id in values_uncovered_db:
+            new_records.append(record)
+
+    SeqIO.write(new_records, "uncovered" + elements_1_name + " " + elements_2_name, 'fasta')
 
 if __name__ == "__main__":
     #compare(args.elements_1, args.elements_2, args.elements_1_name, args.elements_2_name, args.label, args.output)

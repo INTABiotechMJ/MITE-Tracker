@@ -18,8 +18,8 @@ for record in fasta_seq:
     start = int(list_id[2])
     end = int(list_id[3])
     curr_id = list_id[1]
-    start -= 50
-    end += 50
+    start -= 500
+    end += 500
     list_id[2] = str(start)
     list_id[3] = str(end)
     list_id = '|'.join(list_id)

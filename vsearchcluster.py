@@ -25,6 +25,7 @@ def filtercluster(cluster_dic, minimum, candidates):
         if len(cluster_dic[cluster]) >= minimum:
             #group into overlapped (overlapped groups count as one individual)
             #ie should have more than minimum elements non overlapped
+            import ipdb; ipdb.set_trace()
             cluster_positions = []
             for k in cluster_dic[cluster]:
                 if isinstance(candidates[k]['start'], int) and isinstance(candidates[k]['end'], int):

@@ -25,13 +25,13 @@ for k,  chromosome in df_genome.iterrows():
     for i in range(0, chromosome.end, args.step):
         start = i
         end = i + args.step
-        if end > chromosome.end:
+        if end >= chromosome.end:
             start = chromosome.end - args.step 
-            end = chromosome.end
+            end = chromosome.end + 1
         #print start, end
         hits_count = len(df_chromosome[(df_chromosome.sstart >= start) & (df_chromosome.sstart <= end)])
         #print(chromosome.seqname, start, end, hits_count)
-        result.append( [chromosome.seqname,start/1000000, hits_count] )
+        result.append( [chromosome.seqname,start/args.step, hits_count] )
 df = pd.DataFrame(result)
 df.columns = ['chromosome','position','hits']
 result = pd.pivot_table(data=df,
@@ -41,6 +41,36 @@ result = pd.pivot_table(data=df,
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from numpy import arange
+x = arange(25).reshape(5, 5)
+cmap = sns.dark_palette("#2ecc71", as_cmap=True)
+
 #fmt="g",
-sns.heatmap(result, cmap='coolwarm')
-plt.show()
+cmaps = [('Perceptually Uniform Sequential', [
+            'viridis', 'plasma', 'inferno', 'magma']),
+         ('Sequential', [
+            'Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds',
+            'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
+            'GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']),
+         ('Sequential (2)', [
+            'binary', 'gist_yarg', 'gist_gray', 'gray', 'bone', 'pink',
+            'spring', 'summer', 'autumn', 'winter', 'cool', 'Wistia',
+            'hot', 'afmhot', 'gist_heat', 'copper']),
+         ('Diverging', [
+            'PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu',
+            'RdYlBu', 'RdYlGn', 'Spectral', 'coolwarm', 'bwr', 'seismic']),
+         ('Qualitative', [
+            'Pastel1', 'Pastel2', 'Paired', 'Accent',
+            'Dark2', 'Set1', 'Set2', 'Set3',
+            'tab10', 'tab20', 'tab20b', 'tab20c']),
+         ('Miscellaneous', [
+            'flag', 'prism', 'ocean', 'gist_earth', 'terrain', 'gist_stern',
+            'gnuplot', 'gnuplot2', 'CMRmap', 'cubehelix', 'brg', 'hsv',
+            'gist_rainbow', 'rainbow', 'jet', 'nipy_spectral', 'gist_ncar'])]
+for cm in cmaps:
+    for cmap in cm[1]:
+        sns.heatmap(result, cmap=cmap)
+        #plt.show()
+        plt.savefig('heatmap/heatmap_'+str(args.step)+'_'+cmap, dpi=800,bbox_inches='tight')
+        plt.clf()
+        #exit()

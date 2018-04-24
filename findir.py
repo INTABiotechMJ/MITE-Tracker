@@ -187,13 +187,15 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                             if new_element['start'] >= candidate['tir1_start'] and \
                                 new_element['start'] <= candidate['tir1_end'] and \
                                 new_element['end'] >= candidate['tir2_start'] and \
-                                new_element['end'] <= candidate['tir2_end']:
+                                new_element['end'] <= candidate['tir2_end'] and \
+                                new_element['record'] == candidate['record']:
                                 is_nested = True
                             #if other element is nested inside new element TIR
                             if candidate['start'] >= new_element['tir1_start'] and \
                                 candidate['start'] <= new_element['tir1_end'] and \
                                 candidate['end'] >= new_element['tir2_start'] and \
-                                candidate['end'] <= new_element['tir2_end']:
+                                candidate['end'] <= new_element['tir2_end'] and \
+                                candidate['record'] == candidate['record']:
                                 has_nested = True
                                 candidates[curr_index].remove(candidate)
                 if has_nested or not is_nested:
