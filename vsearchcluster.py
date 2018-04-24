@@ -209,12 +209,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 if max_score > 0.5:
                     totally_different_fs = False
                     break
-                print(x)
-                print(fs_left_1, fs_right_1)
-                print(y)
-                print(fs_left_2, fs_right_2)
-                print(max_score)
-                print('*'*10)
+               
             if totally_different_fs and at_least_one:
                 sum_diff_fs_cluster += 1
             if sum_diff_fs_cluster >= new_min_copy_number:
