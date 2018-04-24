@@ -25,16 +25,20 @@ def filtercluster(cluster_dic, minimum, candidates):
         if len(cluster_dic[cluster]) >= minimum:
             #group into overlapped (overlapped groups count as one individual)
             #ie should have more than minimum elements non overlapped
-            import ipdb; ipdb.set_trace()
-            cluster_positions = []
+            cluster_positions = {}
             for k in cluster_dic[cluster]:
                 if isinstance(candidates[k]['start'], int) and isinstance(candidates[k]['end'], int):
-                    cluster_positions.append( (candidates[k]['start'], candidates[k]['end']) )
+                    if not candidates[k]['record'] in cluster_positions:
+                        cluster_positions[candidates[k]['record']] = []
+                    cluster_positions[candidates[k]['record']].append( (candidates[k]['start'], candidates[k]['end']) )
             #cluster_candidates = [v for k,v in candidates.items() if k in cluster_dic[cluster]]
             #for candidate in cluster_candidates:
             #    cluster_positions.append( (candidate['start'], candidate['end']) )
-            merged_overlaped = merge_overlap(cluster_positions)
-            if len(merged_overlaped) >= minimum:
+            total_len = 0
+            for k,v in cluster_positions.items():
+                overlapped_cluster = merge_overlap(v)
+                total_len += len(overlapped_cluster)
+            if total_len >= minimum:
                 filtered_dic[cluster] = cluster_dic[cluster]
     return filtered_dic
 
@@ -157,8 +161,8 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         for x in candidates_in_cluster:
             totally_different_fs = True
             cand_x = candidates[x]
-            fs_right_1 = cand_x['fs_right']
-            fs_left_1 = cand_x['fs_left']
+            fs_right_1 = cand_x['fs_right'].upper()
+            fs_left_1 = cand_x['fs_left'].upper()
             if fs_left_1 == '' or fs_right_1 == '' or not isinstance(fs_left_1,str) or not isinstance(fs_right_1,str):
                 totally_different_fs = False
                 continue
@@ -175,8 +179,8 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 # L1 x L2
                 # L1RC x R2
                 # R1RC x L2
-                fs_right_2 = cand_y['fs_right']
-                fs_left_2 = cand_y['fs_left']
+                fs_right_2 = cand_y['fs_right'].upper()
+                fs_left_2 = cand_y['fs_left'].upper()
                 #some MITE could be at the end or begining of the sequence and this not having flanking seqs
                 if fs_right_2 == '' or fs_left_2 == '':
                     continue
@@ -205,6 +209,12 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 if max_score > 0.5:
                     totally_different_fs = False
                     break
+                print(x)
+                print(fs_left_1, fs_right_1)
+                print(y)
+                print(fs_left_2, fs_right_2)
+                print(max_score)
+                print('*'*10)
             if totally_different_fs and at_least_one:
                 sum_diff_fs_cluster += 1
             if sum_diff_fs_cluster >= new_min_copy_number:

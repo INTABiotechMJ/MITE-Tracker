@@ -150,6 +150,9 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
             flanking_seq_left = seq_fs[fs_start:mite_pos_one]
             flanking_seq_right = seq_fs[mite_pos_two:mite_pos_two + args.FSL]
 
+            if len(flanking_seq_right) < args.FSL or len(flanking_seq_left) < args.FSL:
+                continue
+
             #calculate positions in full sequence
             mite_start_full = mite_pos_one + split_index - args.FSL 
             mite_end_full = mite_pos_two + split_index - args.FSL
