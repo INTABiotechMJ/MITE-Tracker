@@ -25,6 +25,7 @@ for con in content_split:
         continue
     if ('nonautonomous' in con or 'Nonautonomous' in con or 'non-autonomous' in con or 'Non-autonomous' in con or 'MITE' in con) and \
         not 'Retrotransposon' in con:
+        print(con)
         nonaut.append(file_id)
 print len(nonaut)
 
