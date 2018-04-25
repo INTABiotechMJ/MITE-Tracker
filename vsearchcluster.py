@@ -158,7 +158,6 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         #new_min_copy_number = max(min_copy_number,porc_of_clusters)
         new_min_copy_number = min_copy_number
         sum_diff_fs_cluster = 0
-        print(candidates_in_cluster)
         for x in candidates_in_cluster:
             totally_different_fs = True
             cand_x = candidates[x]
