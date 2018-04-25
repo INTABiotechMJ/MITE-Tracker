@@ -8,6 +8,7 @@ import argparse
 parser = argparse.ArgumentParser()#pylint: disable=invalid-name
 parser.add_argument("-f", "--fasta", help="Fasta file", required=True)
 parser.add_argument("-g", "--genome", help="Genome file", required=True)
+parser.add_argument("-s", "--size", type=int, help="fl size", default=50)
 parser.add_argument("-o", "--out", help="Out file", required=True)
 args = parser.parse_args()#pylint: disable=invalid-name
 
@@ -18,8 +19,8 @@ for record in fasta_seq:
     start = int(list_id[2])
     end = int(list_id[3])
     curr_id = list_id[1]
-    start -= 500
-    end += 500
+    start -= args.size
+    end += args.size
     list_id[2] = str(start)
     list_id[3] = str(end)
     list_id = '|'.join(list_id)

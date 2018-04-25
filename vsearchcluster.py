@@ -158,6 +158,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         #new_min_copy_number = max(min_copy_number,porc_of_clusters)
         new_min_copy_number = min_copy_number
         sum_diff_fs_cluster = 0
+        print(candidates_in_cluster)
         for x in candidates_in_cluster:
             totally_different_fs = True
             cand_x = candidates[x]
@@ -175,6 +176,8 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 cand_y = candidates[y]
                 if cand_x['candidate_id'] == cand_y['candidate_id']:
                     continue
+                seq_1 = cand_x['seq'].upper()
+                seq_2 = cand_y['seq'].upper()
                 # R1 x R2
                 # L1 x L2
                 # L1RC x R2
@@ -185,7 +188,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 if fs_right_2 == '' or fs_left_2 == '':
                     continue
                 #empty strings in some versions of pandas are returned as nan, so we make sure the flanking seqs are strings
-                if not isinstance(fs_right_2,str) or not isinstance(fs_left_2,str):
+                if fs_left_2 == '' or fs_right_2 == '' or not isinstance(fs_right_2,str) or not isinstance(fs_left_2,str):
                     continue
                 if not complex_enough(fs_right_2) or not complex_enough(fs_left_2):
                     continue
@@ -199,9 +202,16 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 score_l1_l2 = pairwise2.align.localms(fs_left_1, fs_left_2, 1, -1, -1, -1,score_only=True)
                 score_l1rc_r2 = pairwise2.align.localms(fs_left_1_rc, fs_right_2, 1, -1, -1, -1,score_only=True)
                 score_r1rc_l2 = pairwise2.align.localms(fs_right_1_rc, fs_left_2, 1, -1, -1, -1,score_only=True)
+
+                #since a MITEs might be longer, we also look for the FS inside
+                score_r1_m2 = pairwise2.align.localms(fs_right_1, seq_2, 1, -1, -1, -1,score_only=True)
+                score_l1_m2 = pairwise2.align.localms(fs_left_1, seq_2, 1, -1, -1, -1,score_only=True)
+                score_r1rc_m2 = pairwise2.align.localms(fs_right_1_rc, seq_2, 1, -1, -1, -1,score_only=True)
+                score_l1rc_m2 = pairwise2.align.localms(fs_left_1_rc, seq_2, 1, -1, -1, -1,score_only=True)
+
                 #get max score
                 #max_score = max(score_r1_r2,score_l1_l2)
-                max_score = max(score_r1_r2,score_l1_l2,score_l1rc_r2,score_r1rc_l2)
+                max_score = max(score_r1_r2,score_l1_l2,score_l1rc_r2,score_r1rc_l2,score_r1_m2,score_r1rc_m2,score_l1rc_m2)
                 if max_score == []:
                     max_score = 0
                 max_score /= FSL
