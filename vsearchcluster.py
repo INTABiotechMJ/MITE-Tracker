@@ -163,6 +163,9 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             cand_x = candidates[x]
             fs_right_1 = cand_x['fs_right'].upper()
             fs_left_1 = cand_x['fs_left'].upper()
+            fs_right_1_plus_mite =  cand_x['seq'][-FSL:].upper() + fs_right_1
+            fs_left_1_plus_mite = fs_left_1 +  cand_x['seq'][0:FSL].upper()
+
             if fs_left_1 == '' or fs_right_1 == '' or not isinstance(fs_left_1,str) or not isinstance(fs_right_1,str):
                 totally_different_fs = False
                 continue
@@ -175,14 +178,14 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 cand_y = candidates[y]
                 if cand_x['candidate_id'] == cand_y['candidate_id']:
                     continue
-                seq_1 = cand_x['seq'].upper()
-                seq_2 = cand_y['seq'].upper()
                 # R1 x R2
                 # L1 x L2
                 # L1RC x R2
                 # R1RC x L2
                 fs_right_2 = cand_y['fs_right'].upper()
                 fs_left_2 = cand_y['fs_left'].upper()
+                fs_right_2_plus_mite =  cand_y['seq'][-FSL:].upper() + fs_right_2
+                fs_left_2_plus_mite = fs_left_2 + cand_y['seq'][0:FSL].upper()
                 #some MITE could be at the end or begining of the sequence and this not having flanking seqs
                 if fs_right_2 == '' or fs_left_2 == '':
                     continue
@@ -196,21 +199,32 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 fs_left_1_rc = Seq(fs_left_1).reverse_complement()
                 fs_right_1_rc = Seq(fs_right_1).reverse_complement()
                 
+                fs_left_1_plus_mite_rc = Seq(fs_left_1_plus_mite).reverse_complement()
+                fs_right_1_plus_mite_rc = Seq(fs_right_1_plus_mite).reverse_complement()
+                
                 #calculate scores
                 score_r1_r2 = pairwise2.align.localms(fs_right_1, fs_right_2, 1, -1, -1, -1,score_only=True)
                 score_l1_l2 = pairwise2.align.localms(fs_left_1, fs_left_2, 1, -1, -1, -1,score_only=True)
                 score_l1rc_r2 = pairwise2.align.localms(fs_left_1_rc, fs_right_2, 1, -1, -1, -1,score_only=True)
                 score_r1rc_l2 = pairwise2.align.localms(fs_right_1_rc, fs_left_2, 1, -1, -1, -1,score_only=True)
 
+                #since a MITE might be longer, we also look a few nt inside 
+                score_r1_r2_plus_mite = pairwise2.align.localms(fs_right_1, fs_right_2_plus_mite, 1, -1, -1, -1,score_only=True)
+                score_l1_l2_plus_mite = pairwise2.align.localms(fs_left_1, fs_left_2_plus_mite, 1, -1, -1, -1,score_only=True)
+                score_l1rc_r2_plus_mite = pairwise2.align.localms(fs_left_1_rc, fs_right_2_plus_mite, 1, -1, -1, -1,score_only=True)
+                score_r1rc_l2_plus_mite = pairwise2.align.localms(fs_right_1_rc, fs_left_2_plus_mite, 1, -1, -1, -1,score_only=True)
+
+
+                #TODO remove 
                 #since a MITEs might be longer, we also look for the FS inside
-                score_r1_m2 = pairwise2.align.localms(fs_right_1, seq_2, 1, -1, -1, -1,score_only=True)
-                score_l1_m2 = pairwise2.align.localms(fs_left_1, seq_2, 1, -1, -1, -1,score_only=True)
-                score_r1rc_m2 = pairwise2.align.localms(fs_right_1_rc, seq_2, 1, -1, -1, -1,score_only=True)
-                score_l1rc_m2 = pairwise2.align.localms(fs_left_1_rc, seq_2, 1, -1, -1, -1,score_only=True)
+                #score_r1_m2 = pairwise2.align.localms(fs_right_1, seq_2, 1, -1, -1, -1,score_only=True)
+                #score_l1_m2 = pairwise2.align.localms(fs_left_1, seq_2, 1, -1, -1, -1,score_only=True)
+                #score_r1rc_m2 = pairwise2.align.localms(fs_right_1_rc, seq_2, 1, -1, -1, -1,score_only=True)
+                #score_l1rc_m2 = pairwise2.align.localms(fs_left_1_rc, seq_2, 1, -1, -1, -1,score_only=True)
+                #max_score = max(score_r1_r2,score_l1_l2,score_l1rc_r2,score_r1rc_l2,score_r1_m2,score_r1rc_m2,score_l1rc_m2)
 
                 #get max score
-                #max_score = max(score_r1_r2,score_l1_l2)
-                max_score = max(score_r1_r2,score_l1_l2,score_l1rc_r2,score_r1rc_l2,score_r1_m2,score_r1rc_m2,score_l1rc_m2)
+                max_score = max(score_r1_r2,score_l1_l2,score_l1rc_r2,score_r1rc_l2,score_r1_r2_plus_mite,score_l1_l2_plus_mite,score_l1rc_r2_plus_mite,score_r1rc_l2_plus_mite)
                 if max_score == []:
                     max_score = 0
                 max_score /= FSL

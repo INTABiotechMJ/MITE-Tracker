@@ -39,7 +39,7 @@ def compare(elements_1, elements_2, elements_1_name, elements_2_name, label,ax,s
     #cmd = 'blastn -word_size 12 -qcov_hsp_perc 80  -query %s  -subject %s -outfmt 6  > %s'
     cmd = 'blastn -task blastn -evalue 10e-3 -qcov_hsp_perc 80 -query %s  -subject %s -outfmt 6  > %s'
     #cmd = 'blastn -query %s  -subject %s -outfmt 6  > %s'
-    dbname = elements_2_name.replace(' ','_') + '_' + elements_1_name.replace(' ','_') + '_db'
+    dbname = elements_2_name.replace(' ','_') + '_' + elements_1_name.replace(' ','_') + '_2_db'
     cmd = cmd % (elements_1.replace(' ','_'), elements_2.replace(' ','_'),  dbname)
     print(cmd)
     os.system(cmd)

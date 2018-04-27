@@ -15,8 +15,7 @@ args = parser.parse_args()#pylint: disable=invalid-name
 content_file = open(args.embl, 'r')
 content = content_file.read()
 content_split = content.split('//\n')
-m_file = open('data/repbase_nonautonomous.csv','w') 
-m_file.close()
+
 print len(content_split)
 nonaut = []
 for con in content_split:    
@@ -25,7 +24,6 @@ for con in content_split:
         continue
     if ('nonautonomous' in con or 'Nonautonomous' in con or 'non-autonomous' in con or 'Non-autonomous' in con or 'MITE' in con) and \
         not 'Retrotransposon' in con:
-        print(con)
         nonaut.append(file_id)
 print len(nonaut)
 
