@@ -161,10 +161,6 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
         for x in candidates_in_cluster:
             totally_different_fs = True
             cand_x = candidates[x]
-            fs_right_1 = cand_x['fs_right'].upper()
-            fs_left_1 = cand_x['fs_left'].upper()
-            fs_right_1_plus_mite =  cand_x['seq'][-FSL:].upper() + fs_right_1
-            fs_left_1_plus_mite = fs_left_1 +  cand_x['seq'][0:FSL].upper()
 
             if fs_left_1 == '' or fs_right_1 == '' or not isinstance(fs_left_1,str) or not isinstance(fs_right_1,str):
                 totally_different_fs = False
@@ -172,6 +168,11 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             if not complex_enough(fs_right_1) or not complex_enough(fs_left_1):
                 totally_different_fs = False
                 continue
+
+            fs_right_1 = cand_x['fs_right'].upper()
+            fs_left_1 = cand_x['fs_left'].upper()
+            fs_right_1_plus_mite =  cand_x['seq'][-FSL:].upper() + fs_right_1
+            fs_left_1_plus_mite = fs_left_1 +  cand_x['seq'][0:FSL].upper()
 
             at_least_one = False
             for y in candidates_in_cluster:
@@ -182,10 +183,6 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 # L1 x L2
                 # L1RC x R2
                 # R1RC x L2
-                fs_right_2 = cand_y['fs_right'].upper()
-                fs_left_2 = cand_y['fs_left'].upper()
-                fs_right_2_plus_mite =  cand_y['seq'][-FSL:].upper() + fs_right_2
-                fs_left_2_plus_mite = fs_left_2 + cand_y['seq'][0:FSL].upper()
                 #some MITE could be at the end or begining of the sequence and this not having flanking seqs
                 if fs_right_2 == '' or fs_left_2 == '':
                     continue
@@ -195,6 +192,10 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 if not complex_enough(fs_right_2) or not complex_enough(fs_left_2):
                     continue
 
+                fs_right_2 = cand_y['fs_right'].upper()
+                fs_left_2 = cand_y['fs_left'].upper()
+                fs_right_2_plus_mite =  cand_y['seq'][-FSL:].upper() + fs_right_2
+                fs_left_2_plus_mite = fs_left_2 + cand_y['seq'][0:FSL].upper()
 
                 fs_left_1_rc = Seq(fs_left_1).reverse_complement()
                 fs_right_1_rc = Seq(fs_right_1).reverse_complement()
