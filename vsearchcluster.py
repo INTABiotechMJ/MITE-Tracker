@@ -162,6 +162,9 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
             totally_different_fs = True
             cand_x = candidates[x]
 
+            fs_right_1 = cand_x['fs_right']
+            fs_left_1 = cand_x['fs_left']
+
             if fs_left_1 == '' or fs_right_1 == '' or not isinstance(fs_left_1,str) or not isinstance(fs_right_1,str):
                 totally_different_fs = False
                 continue
@@ -169,8 +172,8 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 totally_different_fs = False
                 continue
 
-            fs_right_1 = cand_x['fs_right'].upper()
-            fs_left_1 = cand_x['fs_left'].upper()
+            fs_right_1 = fs_right_1.upper()
+            fs_left_1 = fs_left_1.upper()
             fs_right_1_plus_mite =  cand_x['seq'][-FSL:].upper() + fs_right_1
             fs_left_1_plus_mite = fs_left_1 +  cand_x['seq'][0:FSL].upper()
 
@@ -184,6 +187,9 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 # L1RC x R2
                 # R1RC x L2
                 #some MITE could be at the end or begining of the sequence and this not having flanking seqs
+                fs_right_2 = cand_y['fs_right']
+                fs_left_2 = cand_y['fs_left']
+                
                 if fs_right_2 == '' or fs_left_2 == '':
                     continue
                 #empty strings in some versions of pandas are returned as nan, so we make sure the flanking seqs are strings
@@ -192,8 +198,8 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                 if not complex_enough(fs_right_2) or not complex_enough(fs_left_2):
                     continue
 
-                fs_right_2 = cand_y['fs_right'].upper()
-                fs_left_2 = cand_y['fs_left'].upper()
+                fs_right_2 = fs_right_2.upper()
+                fs_left_2 = fs_left_2.upper()
                 fs_right_2_plus_mite =  cand_y['seq'][-FSL:].upper() + fs_right_2
                 fs_left_2_plus_mite = fs_left_2 + cand_y['seq'][0:FSL].upper()
 

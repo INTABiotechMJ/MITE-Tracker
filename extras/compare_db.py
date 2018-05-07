@@ -140,6 +140,13 @@ def compare(elements_1, elements_2, elements_1_name, elements_2_name, label,ax,s
 
 if __name__ == "__main__":
     #compare(args.elements_1, args.elements_2, args.elements_1_name, args.elements_2_name, args.label, args.output)
+
+    figure, axes = plt.subplots(1, 1)
+
+    compare("data/trigo2/families_nr.fasta","data/trep/trep.ta.nr.txt","MITE Tracker" ,"TREP",'',axes,"a.png")
+    #compare("data/tracker/families_nr.fasta","data/detectmite/rice.mite.fasta","MITE Tracker" ,"detectMITE", "B",axes[1],"a.png")
+
+    exit()
     figure, axes = plt.subplots(2, 1)
 
     compare("data/tracker/families_nr.fasta","data/mitehunter/all.fa","MITE Tracker" ,"MITE Hunter", "A",axes[0])

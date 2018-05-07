@@ -16,7 +16,7 @@ content_file = open(args.embl, 'r')
 content = content_file.read()
 content_split = content.split('//\n')
 
-print len(content_split)
+print len("total",content_split)
 nonaut = []
 for con in content_split:    
     file_id = con.strip().split('\n')[0].replace('ID','',1).strip().split(' ')[0]
@@ -25,7 +25,7 @@ for con in content_split:
     if ('nonautonomous' in con or 'Nonautonomous' in con or 'non-autonomous' in con or 'Non-autonomous' in con or 'MITE' in con) and \
         not 'Retrotransposon' in con:
         nonaut.append(file_id)
-print len(nonaut)
+print len("nonaut",nonaut)
 
 nonaut_mite = []
 nonaut_mite_rec = []
@@ -37,5 +37,5 @@ for record in fasta_seq:
             nonaut_mite.append(record.id)
             nonaut_mite_rec.append(record)
 
-print len(nonaut_mite)
+print len("nonaut < 800",nonaut_mite)
 SeqIO.write(nonaut_mite_rec, args.out , "fasta")
