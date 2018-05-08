@@ -138,7 +138,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
                     else:
                         clusters_dic[fn] = [id_seq]
             fh.close()
-    shutil.rmtree(file_names['file_temp_cluster_dir'])
+    #shutil.rmtree(file_names['file_temp_cluster_dir'])
     
     #        os.unlink(file_names['file_temp_cluster_dir'] + fn)
     #        if n < args.min_copy_number:
