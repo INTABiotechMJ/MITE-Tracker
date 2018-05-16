@@ -143,6 +143,8 @@ def findIR(q, args,l_lock, candidates, perc_seq, last_perc_seq):
                 continue
 
             ir_seq = seq_fs[mite_pos_one:mite_pos_two]
+            if not complex_enough(ir_seq):
+                continue
             #ir_seq = seq_fs[mite_pos_one - args.FSL:mite_pos_two + args.FSL]
             ir_len = mite_pos_two - mite_pos_one
 
