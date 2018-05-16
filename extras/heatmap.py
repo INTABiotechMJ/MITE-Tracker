@@ -50,7 +50,7 @@ for k,  chromosome in df_genome.iterrows():
 df = pd.DataFrame(result)
 df.columns = ['chromosome','position','hits']
 result = pd.pivot_table(data=df,
-                    index='position',
+                    index='position (Mb)',
                     values='hits',
                     columns='chromosome')
 import seaborn as sns
@@ -105,4 +105,4 @@ for cm in cmaps:
         #plt.show()
         plt.savefig('heatmap/heatmap_'+str(args.step)+'_'+cmap, dpi=800,bbox_inches='tight')
         plt.clf()
-        exit()
+        #exit()

@@ -139,8 +139,8 @@ def compare(elements_1, elements_2, elements_1_name, elements_2_name, label,ax,s
     SeqIO.write(new_records, "uncovered" + elements_1_name + " " + elements_2_name, 'fasta')
 
 if __name__ == "__main__":
-    #compare(args.elements_1, args.elements_2, args.elements_1_name, args.elements_2_name, args.label, args.output)
-
+    compare(args.elements_1, args.elements_2, args.elements_1_name, args.elements_2_name, args.label, args.output)
+    exit()
     figure, axes = plt.subplots(1, 1)
 
     compare("data/trigo2/families_nr.fasta","data/trep/trep.ta.nr.txt","MITE Tracker" ,"TREP",'',axes,"a.png")
