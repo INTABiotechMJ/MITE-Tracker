@@ -1,6 +1,3 @@
-## TODO
-Delete TIR_LEN from description
-
 
 ## About
 
