@@ -11,7 +11,7 @@ Large genomes can be processed in desktop computers.
 This tool has been submitted to NAR and it's under evaluation. 
 
 The repository is under continuous development. At the moment of submission to NAR, this was the last commit of the repository 
- [3cb1dde](https://github.com/INTABiotechMJ/MITE-Tracker/tree/370536b41a4a882d72f8f912dd26a6fc43eb1e71)
+ [23219db](https://github.com/INTABiotechMJ/MITE-Tracker/tree/23219dbdae37822fbd44967f8ad52e211eb8f7cd)
 
 
    
