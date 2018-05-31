@@ -1,5 +1,5 @@
 
-## About
+# About
 
 MITE Tracker: an accurate method for identifying miniature inverted-repeat transposable elements in large genomes. 
 
