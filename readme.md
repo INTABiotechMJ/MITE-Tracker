@@ -1,9 +1,11 @@
 
 ## About
 
-IRmatcher is efficient and easy to run tool for discovering Miniature Inverted repeats Transposable Elements (MITEs) in genomic sequences. It is written in python and uses ncbi's blast+ for finding inverted repeats and cdhit to do the clustering. 
+MITE Tracker: an accurate method for identifying miniature inverted-repeat transposable elements in large genomes. 
 
-Large genomes can be executed in desktop computers.
+An efficient and easy to run tool for discovering Miniature Inverted repeats Transposable Elements (MITEs) in genomic sequences. It is written in python 3 and uses ncbi's blast+ for finding inverted repeats and cdhit to do the clustering. 
+
+Large genomes can be processed in desktop computers.
 
 # Requirements
  - tested in macOS 10.13.1, Debian 7.6, Ubuntu 16.04, Windows 7
@@ -15,8 +17,8 @@ Large genomes can be executed in desktop computers.
 ## 
 ```
 # clone repo
-git clone https://juancresc@bitbucket.org/juancresc/irmatcher.git
-cd irmatcher
+git clone https://github.com/INTABiotechMJ/MITE-Tracker.git
+cd MITE-Tracker
 
 # blast
 sudo apt-get install ncbi-blast+ virtualenv
@@ -40,11 +42,12 @@ pip install -r requirements.txt
 
 # running
 
-python miteParser.py -g /path/to/your/genome.fasta -w 3 -j jobname
+python3 -m MITETracker -g /path/to/your/genome.fasta -w 3 -j jobname
 
 # or to run in background
 
 nohup python -u miteParser.py -g /path/to/your/genome.fasta -w 3 -j jobname &
+
 ```
 
 In order to check the output and progress you can use these command (ctrl+c to exit)
@@ -69,8 +72,11 @@ tail -f results/[jobname]/out.log
 
 # Results
 All the results are placed in _results/[yourjobname]/_. 
-Here you will find _mites.fasta_ with all the MITEs sequences 
-and also _mites.gff3_ with a gff file describing the MITEs in the genome file.
+Here you will find:
+    _families.fasta_ all the MITEs sequences divided by families (custom format)
+    _families_nr.fasta_ with one MITE per family in fasta format
+    _all.fasta_ all MITEs in fasta format
+    _all.gff3_  a gff file describing all MITEs found 
 
 # Troubleshooting
 If getting any error while running the BLASTn searches please check you blast+ version
