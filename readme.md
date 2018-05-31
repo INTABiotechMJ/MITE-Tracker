@@ -101,7 +101,7 @@ python3 -m MITETracker -g /media/chr4A.fasta -w 2 -j IWGSC_4A --task candidates
 python3 -m MITETracker -g /media/chr4B.fasta -w 2 -j IWGSC_4B --task candidates
 ...
 mkdir results/IWGSC
-cat results/IWGSC_*/candidates.csv > results/IWGSC_2/candidates.csv
-cat results/IWGSC_*/candidates.fasta > results/IWGSC_2/candidates.fasta
-python3 -m MITETracker -g none -w 3 -j IWGSC_2 --task cluster --min_copy_number 4
+cat results/IWGSC_*/candidates.csv > results/IWGSC/candidates.csv
+cat results/IWGSC_*/candidates.fasta > results/IWGSC/candidates.fasta
+python3 -m MITETracker -g none -w 3 -j IWGSC --task cluster --min_copy_number 4
 ```
