@@ -85,6 +85,8 @@ If getting any error while running the BLASTn searches please check you blast+ v
 # Running large genomes in different computers
 This is an example of how we run wheat genome. Each chromosome can be run separately (--task candidates) in a different computers. Results should be merged together using _cat_ and then run the cluster command (--task cluster)
 
+21 wheat chromosomes were downloaded in different files. 
+
 ```
 cd ../
 python3 -m MITETracker -g /media/crescentejuan/Data/iwgsc_by_chr/chr1A.fasta -w 2 -j IWGSC_2_1A --task candidates
