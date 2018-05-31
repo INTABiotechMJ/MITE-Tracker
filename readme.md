@@ -88,17 +88,17 @@ This is an example of how we run wheat genome. Each chromosome can be run separa
 21 wheat chromosomes were downloaded in different files. 
 
 ```
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr1A.fasta -w 2 -j IWGSC_1A --task candidates
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr1B.fasta -w 2 -j IWGSC_1B --task candidates
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr1D.fasta -w 2 -j IWGSC_1D --task candidates
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr2A.fasta -w 2 -j IWGSC_2A --task candidates
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr2B.fasta -w 2 -j IWGSC_2B --task candidates
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr2D.fasta -w 2 -j IWGSC_2D --task candidates
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr3A.fasta -w 2 -j IWGSC_3A --task candidates
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr3B.fasta -w 2 -j IWGSC_3B --task candidates
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr3D.fasta -w 2 -j IWGSC_3D --task candidates
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr4A.fasta -w 2 -j IWGSC_4A --task candidates
-python3 -m MITETracker -g /media/iwgsc_by_chr/chr4B.fasta -w 2 -j IWGSC_4B --task candidates
+python3 -m MITETracker -g /media/chr1A.fasta -w 2 -j IWGSC_1A --task candidates
+python3 -m MITETracker -g /media/chr1B.fasta -w 2 -j IWGSC_1B --task candidates
+python3 -m MITETracker -g /media/chr1D.fasta -w 2 -j IWGSC_1D --task candidates
+python3 -m MITETracker -g /media/chr2A.fasta -w 2 -j IWGSC_2A --task candidates
+python3 -m MITETracker -g /media/chr2B.fasta -w 2 -j IWGSC_2B --task candidates
+python3 -m MITETracker -g /media/chr2D.fasta -w 2 -j IWGSC_2D --task candidates
+python3 -m MITETracker -g /media/chr3A.fasta -w 2 -j IWGSC_3A --task candidates
+python3 -m MITETracker -g /media/chr3B.fasta -w 2 -j IWGSC_3B --task candidates
+python3 -m MITETracker -g /media/chr3D.fasta -w 2 -j IWGSC_3D --task candidates
+python3 -m MITETracker -g /media/chr4A.fasta -w 2 -j IWGSC_4A --task candidates
+python3 -m MITETracker -g /media/chr4B.fasta -w 2 -j IWGSC_4B --task candidates
 ...
 mkdir results/IWGSC
 cat results/IWGSC_*/candidates.csv > results/IWGSC_2/candidates.csv
