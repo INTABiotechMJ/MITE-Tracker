@@ -10,7 +10,7 @@ Large genomes can be processed in desktop computers.
 # Publication source code
 
 This repository is under continuous development. At the moment of submission to NAR, this was the last commit of the repository 
- [3cb1dde](https://github.com/INTABiotechMJ/MITE-Tracker/commit/3cb1ddede11f64dd13d340ddacda5cba7c9f9a61)
+ [3cb1dde](https://github.com/INTABiotechMJ/MITE-Tracker/tree/370536b41a4a882d72f8f912dd26a6fc43eb1e71)
 
 
    
