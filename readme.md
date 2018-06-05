@@ -7,11 +7,6 @@ An efficient and easy to run tool for discovering Miniature Inverted repeats Tra
 
 Large genomes can be processed in desktop computers.
 
-# Citation / Publication / References
-This tool has been submitted to NAR and it's under evaluation. 
-
-The repository is under continuous development. At the moment of submission to NAR, this was the last commit of the repository 
- [23219db](https://github.com/INTABiotechMJ/MITE-Tracker/tree/23219dbdae37822fbd44967f8ad52e211eb8f7cd)
 
 
    
