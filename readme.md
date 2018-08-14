@@ -7,8 +7,6 @@ An efficient and easy to run tool for discovering Miniature Inverted repeats Tra
 
 Large genomes can be processed in desktop computers.
 
-
-
    
 # Requirements
  - tested in macOS 10.13.1, Debian 7.6, Ubuntu 16.04, Windows 7
