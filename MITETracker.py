@@ -23,6 +23,7 @@ parser.add_argument("-g", "--genome", help="Genome file in fasta format", requir
 parser.add_argument("-j","--jobname", help="Will create files under a folder called [jobname]", required=True)
 parser.add_argument("-w","--workers", help="Max number of processes to use simultaneously", type=int, default=1)
 parser.add_argument("--mite_max_len", help="MITE max lenght", type=int, default=800)
+parser.add_argument("--lcc", help="Local composition index", type=float, default=1)
 parser.add_argument("--mite_min_len", help="Min total lenght", type=int, default=50)
 parser.add_argument("--align_min_len", help="TIR minimun aligmnent length", type=int, default=10)
 parser.add_argument("--tsd_min_len", help="TSD min lenght", type=int, default=2)
