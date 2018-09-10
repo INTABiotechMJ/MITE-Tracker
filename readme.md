@@ -40,6 +40,7 @@ cd ..
 virtualenv -p python3 venv
 source venv/bin/activate
 #might need: sudo apt-get install python3.6-dev
+#if pandas failed to install, run: pip3 install cython
 pip3 install -r requirements.txt
 
 # running
