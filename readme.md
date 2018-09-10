@@ -40,7 +40,7 @@ cd ..
 virtualenv -p python3 venv
 source venv/bin/activate
 #might need: sudo apt-get install python-dev
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 # running
 
