@@ -7,7 +7,7 @@ subject
 test
 tmp/*.tmp
 dev/
-
+.idea/
 .DS_Store
 extras/.ipynb_checkpoints
 *.ipynb_checkpoints*

@@ -30,15 +30,16 @@ sudo apt-get install ncbi-blast+ virtualenv
 wget https://github.com/torognes/vsearch/archive/v2.7.1.tar.gz
 tar xzf v2.7.1.tar.gz
 cd vsearch-2.7.1
-#might need sudo apt-get install autoconf
+#might need: sudo apt-get install autoconf
 sh autogen.sh
 ./configure
 make
 
 #python dependencies
 cd ..
-virtualenv venv
+virtualenv -p python3 venv
 source venv/bin/activate
+#might need: sudo apt-get install python-dev
 pip install -r requirements.txt
 
 # running
