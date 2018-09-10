@@ -49,7 +49,7 @@ python3 -m MITETracker -g /path/to/your/genome.fasta -w 3 -j jobname
 
 # or to run in background
 
-nohup python -u miteParser.py -g /path/to/your/genome.fasta -w 3 -j jobname &
+nohup python3 -m MITETracker -g /path/to/your/genome.fasta -w 3 -j jobname &
 
 ```
 
