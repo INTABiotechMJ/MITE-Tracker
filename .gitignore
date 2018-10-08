@@ -19,3 +19,4 @@ nohup.out
 extras/
 *_db
 *.png*
+!supplementary_materials/
