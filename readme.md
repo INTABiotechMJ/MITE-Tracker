@@ -1,4 +1,4 @@
-##Publication and citing
+## Publication and citing
 https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2376-y
 
 Please cite with:
