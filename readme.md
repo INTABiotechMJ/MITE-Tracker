@@ -1,5 +1,15 @@
+https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2376-y
+
+##Note:
+Due to a problem with additionals files in publication we have added those files in this repository under supplementary_materials/
+
+*rice_mites.fasta:* Database of non-redundant MITE family database obtained from the rice genome
+*wheat_mites.fasta:* Database of non-redundant MITE family database obtained from the wheat genome
+*tools_comparison.csv:* Execution summary of MITE Tracker and other tools using several genomes
+*wheat_genes.csv:* Wheat genes containing MITEs within its coding region.
 
 # About
+
 
 MITE Tracker: an accurate method for identifying miniature inverted-repeat transposable elements in large genomes. 
 
