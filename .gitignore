@@ -1,7 +1,5 @@
 query
 subject
-*.fasta
-*.fa
 *.pyc
 *venv*
 test
