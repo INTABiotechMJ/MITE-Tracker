@@ -4,8 +4,11 @@ https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2376-y
 Due to a problem with additionals files in publication we have added those files in this repository under supplementary_materials/
 
 _rice_mites.fasta:_ Database of non-redundant MITE family database obtained from the rice genome
+
 _wheat_mites.fasta:_ Database of non-redundant MITE family database obtained from the wheat genome
+
 _tools_comparison.csv:_ Execution summary of MITE Tracker and other tools using several genomes
+
 _wheat_genes.csv:_ Wheat genes containing MITEs within its coding region.
 
 # About
