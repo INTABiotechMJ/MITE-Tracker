@@ -135,7 +135,7 @@ Or for bibtex users:
 `
 
 ## Note:
-Due to a problem with additionals files in publication we have added those files in this repository under supplementary_materials/
+Due to a problem with additionals files in the publication we have added those files in this repository under supplementary_materials/
 
 _rice_mites.fasta:_ Database of non-redundant MITE family database obtained from the rice genome
 
