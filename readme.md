@@ -39,7 +39,8 @@ make
 cd ..
 virtualenv -p python3 venv
 source venv/bin/activate
-#might need: sudo apt-get install python-dev
+#might need: sudo apt-get install python3.6-dev
+#if pandas failed to install, run: pip3 install cython
 pip3 install -r requirements.txt
 
 # running
@@ -48,7 +49,7 @@ python3 -m MITETracker -g /path/to/your/genome.fasta -w 3 -j jobname
 
 # or to run in background
 
-nohup python -u miteParser.py -g /path/to/your/genome.fasta -w 3 -j jobname &
+nohup python3 -m MITETracker -g /path/to/your/genome.fasta -w 3 -j jobname &
 
 ```
 
