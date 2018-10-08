@@ -1,36 +1,3 @@
-## Publication and citing
-https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2376-y
-
-Please cite with:
-
-Crescente, Juan Manuel, et al. "MITE Tracker: an accurate approach to identify miniature inverted-repeat transposable elements in large genomes." BMC Bioinformatics 19.1 (2018): 348.
-
-Or for bibtex users:
-
-`
-@article{crescente2018mite,
-  title={MITE Tracker: an accurate approach to identify miniature inverted-repeat transposable elements in large genomes},
-  author={Crescente, Juan Manuel and Zavallo, Diego and Helguera, Marcelo and Vanzetti, Leonardo Sebasti{\'a}n},
-  journal={BMC Bioinformatics},
-  volume={19},
-  number={1},
-  pages={348},
-  year={2018},
-  publisher={Springer}
-}
-`
-
-## Note:
-Due to a problem with additionals files in publication we have added those files in this repository under supplementary_materials/
-
-_rice_mites.fasta:_ Database of non-redundant MITE family database obtained from the rice genome
-
-_wheat_mites.fasta:_ Database of non-redundant MITE family database obtained from the wheat genome
-
-_tools_comparison.csv:_ Execution summary of MITE Tracker and other tools using several genomes
-
-_wheat_genes.csv:_ Wheat genes containing MITEs within its coding region.
-
 # About
 
 
@@ -141,3 +108,39 @@ cat results/IWGSC_*/candidates.csv > results/IWGSC/candidates.csv
 cat results/IWGSC_*/candidates.fasta > results/IWGSC/candidates.fasta
 python3 -m MITETracker -g none -w 3 -j IWGSC --task cluster --min_copy_number 4
 ```
+
+
+## Publication and citing
+https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2376-y
+
+Please cite with:
+
+`
+Crescente, Juan Manuel, et al. "MITE Tracker: an accurate approach to identify miniature inverted-repeat transposable elements in large genomes." BMC Bioinformatics 19.1 (2018): 348.
+`
+
+Or for bibtex users:
+
+`
+@article{crescente2018mite,
+  title={MITE Tracker: an accurate approach to identify miniature inverted-repeat transposable elements in large genomes},
+  author={Crescente, Juan Manuel and Zavallo, Diego and Helguera, Marcelo and Vanzetti, Leonardo Sebasti{\'a}n},
+  journal={BMC Bioinformatics},
+  volume={19},
+  number={1},
+  pages={348},
+  year={2018},
+  publisher={Springer}
+}
+`
+
+## Note:
+Due to a problem with additionals files in publication we have added those files in this repository under supplementary_materials/
+
+_rice_mites.fasta:_ Database of non-redundant MITE family database obtained from the rice genome
+
+_wheat_mites.fasta:_ Database of non-redundant MITE family database obtained from the wheat genome
+
+_tools_comparison.csv:_ Execution summary of MITE Tracker and other tools using several genomes
+
+_wheat_genes.csv:_ Wheat genes containing MITEs within its coding region.
