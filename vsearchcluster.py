@@ -107,7 +107,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
     '--strand','both',
     '--clusters',file_names['file_temp_cluster'],
     '--iddef','1',
-    '--id', '0.8']
+    '--id', '0.88']
     makelog(' '.join(cmd_list))
     p = Popen(cmd_list, stdout=PIPE, stderr=PIPE)
     out,err = p.communicate()
