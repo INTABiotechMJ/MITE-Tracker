@@ -47,7 +47,8 @@ file_names['file_candidates_partial_prefix'] = "results/" + args.jobname + "/tem
 file_names['candidates_partial_cluster'] = "results/" + args.jobname + "/candidates.cluster.fasta"
 file_names['candidates_partial_repr_prefix'] =  "results/" + args.jobname + "/temp/candidates.representative.partial."
 file_names['all_file'] = "results/" + args.jobname + "/all.fasta"
-file_names['families_file'] = "results/" + args.jobname + "/families.fasta"
+file_names['families_file'] = "results/" + args.jobname + "/families.txt"
+file_names['families_all'] = "results/" + args.jobname + "/families_all.fasta"
 file_names['file_candidates_dir'] = "results/" + args.jobname + "/temp/"
 
 #write dir for results

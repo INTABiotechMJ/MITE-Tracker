@@ -144,3 +144,44 @@ _wheat_mites.fasta:_ Database of non-redundant MITE family database obtained fro
 _tools_comparison.csv:_ Execution summary of MITE Tracker and other tools using several genomes
 
 _wheat_genes.csv:_ Wheat genes containing MITEs within its coding region.
+
+
+## Additional notes
+
+### Annotating all arabidopsis MITEs as an example
+
+#### Clone MITETracker and install dependencies
+
+```
+#clone
+git clone git@github.com:INTABiotechMJ/MITE-Tracker.git
+#enter program directory
+cd MITE-Tracker
+#create virtual enviornment with python3
+virtualenv -p python3 venv
+#activate virtual environment
+source venv/bin/activate
+#install requirements
+pip3 install -r requirements.txt
+#run MITE Tracker
+python3 MITETracker.py  -g TAIR10_chr_all.fas -j ata
+```
+
+With this version of TAIR genome we get a total of 38 distinct MITE families. 
+
+I'm gonna use the all.fasta file to map MITEs genome-wide because it contains all found elements.
+
+```
+blastn -task blastn -query results/ata/all.fasta  -subject ../data/tair10/TAIR10_chr_all.fas -outfmt "6 qseqid sseqid qstart qend sstart send score length mismatch gaps gapopen nident pident evalue qlen slen qcovs" > results/ata/blast_families_ata.csv
+```
+
+Let's run out notebook for filtering blast results, run till the end. This will explain at each step how filtering is done and what are the results.
+
+```
+jupyter lab
+```
+
+Ultimately, convert the blast filtered output to gff
+```
+python blast2gff.py -i results/ata/blast_families_ata.filtered.csv  -o results/ata/mitesInGenome.gff3 -n MITE_TRACKER
+```
