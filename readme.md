@@ -185,3 +185,9 @@ Ultimately, convert the blast filtered output to gff
 ```
 python blast2gff.py -i results/ata/blast_families_ata.filtered.csv  -o results/ata/mitesInGenome.gff3 -n MITE_TRACKER
 ```
+
+This is our resulting annotated file
+
+```
+results/ata/mitesInGenome.gff3
+```
