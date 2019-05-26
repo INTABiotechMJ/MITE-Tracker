@@ -4,6 +4,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", help="BLASTn outfmt 6 file", required=True)
 parser.add_argument("-n", "--name", help="Program name (required for second column)", required=True)
+parser.add_argument("-f", "--feature", help="Feature name (required for third column)", required=True)
 parser.add_argument("-o", "--output", help="gff3 file name output", required=True)
 args = parser.parse_args()
 
@@ -16,7 +17,7 @@ df['source'] = args.name
 df['frame'] = '.'
 df['score'] = '.'
 df['strand'] = '+'
-df['feature'] = 'TE'
+df['feature'] = args.feature
 df = df[['sseqid','source','feature','sstart','send','score','strand','frame','qseqid']]
 
 #gff3 -> ['seqname' , 'source' , 'feature' , 'start' , 'end' , 'score' , 'strand' , 'frame' , 'attribute']
