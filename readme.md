@@ -12,21 +12,10 @@ Large genomes can be processed in desktop computers.
  - tested in macOS 10.13.1, Debian 7.6, Ubuntu 16.04, Windows 7
  - ncbi blast+ (Nucleotide-Nucleotide BLAST 2.6.0+)
  - python requirements are in requirements.txt file (bipython and pandas)
-
+ - vsearch
 # Installation and running
-
-## 
 ```
-# clone repo
-git clone https://github.com/INTABiotechMJ/MITE-Tracker.git
-cd MITE-Tracker
-
-# blast
-sudo apt-get install ncbi-blast+ virtualenv
-# in macOS: brew install ncbi-blast+ virtualenv
-
-
-#vsearch
+#install vsearch
 wget https://github.com/torognes/vsearch/archive/v2.7.1.tar.gz
 tar xzf v2.7.1.tar.gz
 cd vsearch-2.7.1
@@ -34,6 +23,16 @@ cd vsearch-2.7.1
 sh autogen.sh
 ./configure
 make
+echo "export PATH=${PWD}/bin:\$PATH">>~/.bashrc
+source ~/.bashrc
+
+# clone repo
+git clone https://github.com/INTABiotechMJ/MITE-Tracker.git
+cd MITE-Tracker
+
+# blast
+sudo apt-get install ncbi-blast+ virtualenv
+# in macOS: brew install ncbi-blast+ virtualenv
 
 #python dependencies
 cd ..
