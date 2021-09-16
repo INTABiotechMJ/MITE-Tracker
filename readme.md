@@ -74,12 +74,12 @@ tail -f results/[jobname]/out.log
 
 
 # Results
-All the results are placed in _results/[yourjobname]/_. 
+All the results are placed in `results/[yourjobname]/`. 
 Here you will find:
-    _families.fasta_ all the MITEs sequences divided by families (custom format)
-    _families_nr.fasta_ with one MITE per family in fasta format
-    _all.fasta_ all MITEs in fasta format
-    _all.gff3_  a gff file describing all MITEs found 
+ -  `families.txt` all the MITEs sequences divided by families (custom format)
+ -  `families_nr.fasta` with one MITE per family in fasta format
+ -  `all.fasta` all MITEs in fasta format
+ - `all.gff3`  a gff file describing all MITEs found 
 
 # Troubleshooting
 If getting any error while running the BLASTn searches please check you blast+ version
