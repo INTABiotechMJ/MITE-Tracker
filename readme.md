@@ -12,21 +12,10 @@ Large genomes can be processed in desktop computers.
  - tested in macOS 10.13.1, Debian 7.6, Ubuntu 16.04, Windows 7
  - ncbi blast+ (Nucleotide-Nucleotide BLAST 2.6.0+)
  - python requirements are in requirements.txt file (bipython and pandas)
-
+ - vsearch
 # Installation and running
-
-## 
 ```
-# clone repo
-git clone https://github.com/INTABiotechMJ/MITE-Tracker.git
-cd MITE-Tracker
-
-# blast
-sudo apt-get install ncbi-blast+ virtualenv
-# in macOS: brew install ncbi-blast+ virtualenv
-
-
-#vsearch
+#install vsearch
 wget https://github.com/torognes/vsearch/archive/v2.7.1.tar.gz
 tar xzf v2.7.1.tar.gz
 cd vsearch-2.7.1
@@ -34,6 +23,16 @@ cd vsearch-2.7.1
 sh autogen.sh
 ./configure
 make
+echo "export PATH=${PWD}/bin:\$PATH">>~/.bashrc
+source ~/.bashrc
+
+# clone repo
+git clone https://github.com/INTABiotechMJ/MITE-Tracker.git
+cd MITE-Tracker
+
+# blast
+sudo apt-get install ncbi-blast+ virtualenv
+# in macOS: brew install ncbi-blast+ virtualenv
 
 #python dependencies
 cd ..
@@ -75,12 +74,12 @@ tail -f results/[jobname]/out.log
 
 
 # Results
-All the results are placed in _results/[yourjobname]/_. 
+All the results are placed in `results/[yourjobname]/`. 
 Here you will find:
-    _families.fasta_ all the MITEs sequences divided by families (custom format)
-    _families_nr.fasta_ with one MITE per family in fasta format
-    _all.fasta_ all MITEs in fasta format
-    _all.gff3_  a gff file describing all MITEs found 
+ -  `families.txt` all the MITEs sequences divided by families (custom format)
+ -  `families_nr.fasta` with one MITE per family in fasta format
+ -  `all.fasta` all MITEs in fasta format
+ - `all.gff3`  a gff file describing all MITEs found 
 
 # Troubleshooting
 If getting any error while running the BLASTn searches please check you blast+ version

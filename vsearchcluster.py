@@ -100,7 +100,7 @@ def cluster(file_names, candidates, min_copy_number, FSL, workers):
 
     makelog("Clustering")
     cmd_list = [
-    './vsearch-2.7.1/bin/vsearch',
+    'vsearch',
     '--cluster_fast',file_names['file_candidates_fasta'],
     #'--consout',file_names['file_representative'],
     '--threads',str(workers),
