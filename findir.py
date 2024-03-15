@@ -4,7 +4,14 @@ from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 from subprocess import Popen, PIPE
 import os
-from Bio.SeqUtils import GC
+
+try:
+    from Bio.SeqUtils import GC
+except ImportError:
+    from Bio.SeqUtils import gc_fraction
+    def GC(x):
+        return gc_fraction(x, 'ignore') * 100
+
 import queue
 import logging
 
